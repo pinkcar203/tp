@@ -1,4 +1,5 @@
 package meditrack;
+
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -10,13 +11,13 @@ import meditrack.storage.StorageManager;
 import meditrack.ui.FirstLaunchScreen;
 import meditrack.ui.LoginScreen;
 import meditrack.ui.MainAppScreen;
-
 import java.util.Optional;
 /**
  * The main entry point for the MediTrack JavaFX application.
  * Manages the primary stage and controls the flow between setup, login, and the main app.
  */
 public class Main extends Application {
+
     private Stage primaryStage;
     private final StorageManager storageManager = new StorageManager();
 
@@ -46,8 +47,10 @@ public class Main extends Application {
         } else {
             showLoginScreen();
         }
+
         primaryStage.show();
     }
+
     /**
      * Displays the First Launch Setup screen.
      */
@@ -55,6 +58,7 @@ public class Main extends Application {
         FirstLaunchScreen setupScreen = new FirstLaunchScreen(this::showLoginScreen);
         primaryStage.setScene(new Scene(setupScreen));
     }
+
     /**
      * Displays the Login screen.
      */
@@ -62,6 +66,7 @@ public class Main extends Application {
         LoginScreen loginScreen = new LoginScreen(this::showMainAppScreen);
         primaryStage.setScene(new Scene(loginScreen));
     }
+
     /**
      * Displays the Main Application screen after a successful login.
      * with the full {@link MainAppScreen} (sidebar + personnel screens).
