@@ -5,6 +5,7 @@ import meditrack.model.ReadOnlyMediTrack;
 import meditrack.model.Supply;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -24,7 +25,13 @@ public class CsvExportUtility {
     public static Path exportData(ReadOnlyMediTrack data) throws IOException {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName = "MediTrack_Export_" + timestamp + ".csv";
-        Path filePath = Paths.get(System.getProperty("user.dir"), fileName);
+        Path exportDir = Paths.get(System.getProperty("user.dir"), "exports");
+
+        if (!Files.exists(exportDir)) {
+            Files.createDirectories(exportDir);
+        }
+
+        Path filePath = exportDir.resolve(fileName);
 
         try (FileWriter writer = new FileWriter(filePath.toFile())) {
 
