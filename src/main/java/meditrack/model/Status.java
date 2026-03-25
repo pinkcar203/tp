@@ -7,9 +7,11 @@ package meditrack.model;
  * {@link meditrack.storage.JsonAdaptedPersonnel}.
  */
 public enum Status {
-    FIT,
-    LIGHT_DUTIES,
-    UNFIT;
+    PENDING,        // Newly added by PC, awaiting MO assessment
+    FIT,            // Medically cleared for duty
+    LIGHT_DUTY,   // Requires MO monitoring
+    MC,          // Requires MO monitoring
+    CASUALTY;        // Marked unwell outfield by Field Medic, requires MO assessment
 
     /**
      * Returns true if this status qualifies the person for full deployment.
@@ -33,13 +35,13 @@ public enum Status {
         switch (value.trim().toUpperCase().replace(' ', '_')) {
             case "FIT":
                 return FIT;
-            case "LIGHT_DUTIES":
-                return LIGHT_DUTIES;
-            case "UNFIT":
-                return UNFIT;
+            case "LIGHT_DUTY":
+                return LIGHT_DUTY;
+            case "MC":
+                return MC;
             default:
                 throw new IllegalArgumentException(
-                        "Invalid status: \"" + value + "\". Valid values: FIT, LIGHT_DUTIES, UNFIT");
+                        "Invalid status: \"" + value + "\". Valid values: FIT, LIGHT_DUTY, MC, CASUALTY, PENDING");
         }
     }
 

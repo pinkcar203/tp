@@ -83,12 +83,15 @@ public class MedicalAttentionScreen extends VBox {
     }
 
     /**
-     * Reloads the table view with the latest filtered list of injured personnel.
+     * Reloads the table view with the latest filtered list of personnel requiring triage.
      */
     public void refresh() {
         List<Personnel> all = model.getFilteredPersonnelList(null);
         List<Personnel> medicalCases = all.stream()
-                .filter(p -> p.getStatus() == Status.UNFIT || p.getStatus() == Status.LIGHT_DUTIES)
+                .filter(p -> p.getStatus() == Status.PENDING ||
+                        p.getStatus() == Status.CASUALTY ||
+                        p.getStatus() == Status.MC ||
+                        p.getStatus() == Status.LIGHT_DUTY)
                 .collect(Collectors.toList());
 
         tableData.setAll(medicalCases);

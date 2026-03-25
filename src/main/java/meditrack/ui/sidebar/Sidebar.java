@@ -88,8 +88,7 @@ public class Sidebar extends VBox {
         if (role == Role.FIELD_MEDIC) {
             firstBtn = navButton("Inventory", Screen.INVENTORY);
             getChildren().add(firstBtn);
-            getChildren().add(navButton("Expiring Soon", Screen.EXPIRING_SOON));
-            getChildren().add(navButton("Personnel (Read-Only)", Screen.PERSONNEL));
+            getChildren().add(navButton("Personnel", Screen.PERSONNEL));
         } else if (role == Role.MEDICAL_OFFICER) {
             firstBtn = navButton("Personnel", Screen.PERSONNEL);
             getChildren().add(firstBtn);
@@ -100,7 +99,7 @@ public class Sidebar extends VBox {
             getChildren().add(navButton("FIT Personnel", Screen.FIT_PERSONNEL));
             getChildren().add(navButton("Duty Roster", Screen.DUTY_ROSTER));
         } else if (role == Role.LOGISTICS_OFFICER) {
-            firstBtn = navButton("Supply Levels", Screen.SUPPLY_LEVELS);
+            firstBtn = navButton("Inventory", Screen.INVENTORY);
             getChildren().add(firstBtn);
             getChildren().add(navButton("Resupply Report", Screen.RESUPPLY_REPORT));
         }

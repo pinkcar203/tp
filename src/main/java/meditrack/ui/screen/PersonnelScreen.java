@@ -51,7 +51,7 @@ public class PersonnelScreen extends VBox {
         this.storage = storage;
         Role currentRole = Session.getInstance().getRole();
         this.canAddDelete = (currentRole == Role.MEDICAL_OFFICER || currentRole == Role.PLATOON_COMMANDER);
-        this.canEditStatus = (currentRole == Role.MEDICAL_OFFICER);
+        this.canEditStatus = (currentRole == Role.MEDICAL_OFFICER || currentRole == Role.FIELD_MEDIC);
         buildUi();
         refresh();
     }
@@ -120,6 +120,11 @@ public class PersonnelScreen extends VBox {
         } else {
             // Inline ComboBox for MEDICAL_OFFICER
             statusCol.setCellFactory(col -> new TableCell<>() {
+                private final ObservableList<Status> allowedStatuses =
+                        (Session.getInstance().getRole() == Role.FIELD_MEDIC)
+                                ? FXCollections.observableArrayList(Status.CASUALTY) // Medics can only flag casualties
+                                : FXCollections.observableArrayList(Status.values()); // MO gets all options
+
                 private final ComboBox<Status> combo =
                         new ComboBox<>(FXCollections.observableArrayList(Status.values()));
                 {

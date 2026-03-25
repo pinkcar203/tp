@@ -38,7 +38,7 @@ public class AddPersonnelModal extends Dialog<AddPersonnelCommand> {
 
     private void buildContent() {
         nameField.setPromptText("Full name");
-        statusCombo.setValue(Status.FIT); // default
+        statusCombo.setValue(Status.PENDING); // default
 
         validationLabel.setStyle("-fx-text-fill: #dc3545; -fx-font-size: 11px;");
         validationLabel.setVisible(false);

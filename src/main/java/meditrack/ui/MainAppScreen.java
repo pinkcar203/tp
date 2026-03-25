@@ -67,10 +67,8 @@ public class MainAppScreen extends HBox {
         getChildren().addAll(sidebar, contentArea);
 
         Role currentRole = Session.getInstance().getRole();
-        if (currentRole == Role.FIELD_MEDIC) {
+        if (currentRole == Role.FIELD_MEDIC || currentRole == Role.LOGISTICS_OFFICER) {
             showScreen(Screen.INVENTORY);
-        } else if (currentRole == Role.LOGISTICS_OFFICER) {
-            showScreen(Screen.SUPPLY_LEVELS);
         } else {
             showScreen(Screen.PERSONNEL);
         }
