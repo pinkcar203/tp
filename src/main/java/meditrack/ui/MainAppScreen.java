@@ -11,6 +11,7 @@ import meditrack.storage.StorageManager;
 import meditrack.ui.screen.DutyRosterScreen;
 import meditrack.ui.screen.ExpiringSoonScreen;
 import meditrack.ui.screen.FitPersonnelScreen;
+import meditrack.ui.screen.MedicalAttentionScreen;
 import meditrack.ui.screen.InventoryScreen;
 import meditrack.ui.screen.PersonnelScreen;
 import meditrack.ui.screen.ResupplyReportScreen;
@@ -38,6 +39,7 @@ public class MainAppScreen extends HBox {
     private PersonnelScreen personnelScreen;
     private FitPersonnelScreen fitPersonnelScreen;
     private DutyRosterScreen dutyRosterScreen;
+    private MedicalAttentionScreen medicalAttentionScreen;
     private InventoryScreen inventoryScreen;
     private ExpiringSoonScreen expiringSoonScreen;
     private SupplyLevelsScreen supplyLevelsScreen;
@@ -64,10 +66,10 @@ public class MainAppScreen extends HBox {
 
         getChildren().addAll(sidebar, contentArea);
 
-        Role role = Session.getInstance().getRole();
-        if (role == Role.FIELD_MEDIC) {
+        Role currentRole = Session.getInstance().getRole();
+        if (currentRole == Role.FIELD_MEDIC) {
             showScreen(Screen.INVENTORY);
-        } else if (role == Role.LOGISTICS_OFFICER) {
+        } else if (currentRole == Role.LOGISTICS_OFFICER) {
             showScreen(Screen.SUPPLY_LEVELS);
         } else {
             showScreen(Screen.PERSONNEL);
@@ -100,6 +102,13 @@ public class MainAppScreen extends HBox {
                     dutyRosterScreen = new DutyRosterScreen(model);
                 }
                 contentArea.getChildren().add(dutyRosterScreen);
+                break;
+            case MEDICAL_ATTENTION:
+                if (medicalAttentionScreen == null) {
+                    medicalAttentionScreen = new MedicalAttentionScreen(model);
+                }
+                medicalAttentionScreen.refresh();
+                contentArea.getChildren().add(medicalAttentionScreen);
                 break;
             case INVENTORY:
                 if (inventoryScreen == null) {

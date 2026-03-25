@@ -27,6 +27,7 @@ public class Sidebar extends VBox {
     public enum Screen {
         PERSONNEL,
         FIT_PERSONNEL,
+        MEDICAL_ATTENTION,
         DUTY_ROSTER,
         INVENTORY,
         EXPIRING_SOON,
@@ -70,7 +71,8 @@ public class Sidebar extends VBox {
 
         Role role = Session.getInstance().getRole();
         String roleText = switch (role) {
-            case MEDICAL_OFFICER  -> "Medical Officer / Platoon Commander";
+            case MEDICAL_OFFICER  -> "Medical Officer";
+            case PLATOON_COMMANDER -> "Platoon Commander";
             case FIELD_MEDIC      -> "Field Medic";
             case LOGISTICS_OFFICER -> "Logistics Officer";
         };
@@ -89,6 +91,10 @@ public class Sidebar extends VBox {
             getChildren().add(navButton("Expiring Soon", Screen.EXPIRING_SOON));
             getChildren().add(navButton("Personnel (Read-Only)", Screen.PERSONNEL));
         } else if (role == Role.MEDICAL_OFFICER) {
+            firstBtn = navButton("Personnel", Screen.PERSONNEL);
+            getChildren().add(firstBtn);
+            getChildren().add(navButton("Medical Attention", Screen.MEDICAL_ATTENTION));
+        } else if (role == Role.PLATOON_COMMANDER) {
             firstBtn = navButton("Personnel", Screen.PERSONNEL);
             getChildren().add(firstBtn);
             getChildren().add(navButton("FIT Personnel", Screen.FIT_PERSONNEL));

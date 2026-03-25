@@ -5,7 +5,8 @@ package meditrack.model;
  */
 public enum Role {
     FIELD_MEDIC("Field Medic"),
-    MEDICAL_OFFICER("Medical Officer / Platoon Commander"),
+    MEDICAL_OFFICER("Medical Officer"),
+    PLATOON_COMMANDER("Platoon Commander"),
     LOGISTICS_OFFICER("Logistics Officer");
 
     private final String displayName;

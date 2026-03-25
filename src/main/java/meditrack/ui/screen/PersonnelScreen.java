@@ -24,17 +24,17 @@ import java.util.List;
 /**
  * Represents the Personnel Management UI screen.
  * <p>
- * Display and interaction are dynamically adjusted based on the current user's role:
- * <ul>
- * <li><b>Medical Officer:</b> Full access to edit the table, add/remove personnel, and update statuses inline.</li>
- * <li><b>Other Roles:</b> Read-only access to view the roster.</li>
- * </ul>
+ * Permissions:
+ * - Medical Officer: Full access (Add/Delete/Edit Status).
+ * - Platoon Commander: Manage Roster (Add/Delete), but cannot edit medical status.
+ * - Others: Read-only access.
  */
 public class PersonnelScreen extends VBox {
 
     private final ModelManager model;
     private final StorageManager storage;
-    private final boolean readOnly;
+    private final boolean canAddDelete;
+    private final boolean canEditStatus;
 
     private final ObservableList<Personnel> tableData = FXCollections.observableArrayList();
     private final TableView<Personnel> table = new TableView<>(tableData);
@@ -49,7 +49,9 @@ public class PersonnelScreen extends VBox {
     public PersonnelScreen(ModelManager model, StorageManager storage) {
         this.model = model;
         this.storage = storage;
-        this.readOnly = Session.getInstance().getRole() != Role.MEDICAL_OFFICER;
+        Role currentRole = Session.getInstance().getRole();
+        this.canAddDelete = (currentRole == Role.MEDICAL_OFFICER || currentRole == Role.PLATOON_COMMANDER);
+        this.canEditStatus = (currentRole == Role.MEDICAL_OFFICER);
         buildUi();
         refresh();
     }
@@ -63,11 +65,11 @@ public class PersonnelScreen extends VBox {
         setPadding(new Insets(20));
 
         // Header
-        Label title = new Label(readOnly ? "Personnel (Read-Only)" : "Personnel Management");
+        Label title = new Label(canAddDelete ? "Personnel Management" : "Personnel (Read-Only)");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         getChildren().add(title);
 
-        if (!readOnly) {
+        if (canAddDelete) {
             Button addBtn = new Button("+ Add Personnel");
             addBtn.setStyle("-fx-background-color: #0d6efd; -fx-text-fill: white; "
                     + "-fx-font-weight: bold; -fx-padding: 8 16 8 16; -fx-background-radius: 5;");
@@ -80,7 +82,7 @@ public class PersonnelScreen extends VBox {
 
         HBox footer = new HBox(8);
         footer.setAlignment(Pos.CENTER_RIGHT);
-        if (!readOnly) {
+        if (canAddDelete) {
             Button removeBtn = new Button("Remove Selected");
             removeBtn.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; "
                     + "-fx-font-weight: bold; -fx-padding: 8 16 8 16; -fx-background-radius: 5;");
@@ -105,16 +107,14 @@ public class PersonnelScreen extends VBox {
         indexCol.setCellValueFactory(cd ->
                 new SimpleStringProperty(String.valueOf(tableData.indexOf(cd.getValue()) + 1)));
 
-        // Name column
         TableColumn<Personnel, String> nameCol = new TableColumn<>("Name");
         nameCol.setPrefWidth(220);
         nameCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getName()));
 
-        // Status column
         TableColumn<Personnel, String> statusCol = new TableColumn<>("Status");
         statusCol.setPrefWidth(160);
 
-        if (readOnly) {
+        if (!canEditStatus) {
             statusCol.setCellValueFactory(cd ->
                     new SimpleStringProperty(cd.getValue().getStatus().toString()));
         } else {
@@ -140,6 +140,15 @@ public class PersonnelScreen extends VBox {
                     });
                 }
 
+                /**
+                 * Updates the visual representation of the cell within the table column.
+                 * Inherited from JavaFX {@link TableCell}. This method ensures that the interactive
+                 * ComboBox is only rendered for populated rows, and that it always displays
+                 * the current medical status of the associated personnel record.
+                 *
+                 * @param item  The current status string (unused directly as we bind to the entire object).
+                 * @param empty True if the cell is currently empty (contains no data), false otherwise.
+                 */
                 @Override
                 protected void updateItem(String item, boolean empty) {
                     super.updateItem(item, empty);

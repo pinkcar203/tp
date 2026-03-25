@@ -46,10 +46,10 @@ public class GenerateRosterCommand extends Command {
         return new CommandResult(header + "\n" + numberedList);
     }
 
-    /** Medical officer only. */
+    /** Platoon commander only. */
     @Override
     public Role getRequiredRole() {
-        return Role.MEDICAL_OFFICER;
+        return Role.PLATOON_COMMANDER;
     }
 
     /** Last roster from {@link #execute}, or {@code null} if not run yet. */
