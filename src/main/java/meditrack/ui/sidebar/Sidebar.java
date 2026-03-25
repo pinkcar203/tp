@@ -8,18 +8,18 @@ import javafx.scene.control.Separator;
 import javafx.scene.layout.*;
 import meditrack.model.Role;
 import meditrack.model.Session;
-
 import java.util.function.Consumer;
 
 /**
  * Sidebar navigation component.
  *
- * <p>Navigation items are role-based:
+ * <p>Navigation items are dynamically generated based on the user's {@link Role}:
  * <ul>
  *   <li><b>FIELD_MEDIC</b> — Inventory, Expiring Soon, Personnel (Read-Only)</li>
  *   <li><b>MEDICAL_OFFICER</b> — Personnel, FIT Personnel, Duty Roster</li>
  *   <li><b>LOGISTICS_OFFICER</b> — Supply Levels, Resupply Report</li>
  * </ul>
+ * * <p>Also provides global utilities such as CSV data export and user logout.
  */
 public class Sidebar extends VBox {
 
@@ -36,14 +36,27 @@ public class Sidebar extends VBox {
 
     private final Consumer<Screen> navigationHandler;
     private final Runnable logoutHandler;
+    private final Runnable exportHandler;
     private Button activeButton;
 
-    public Sidebar(Consumer<Screen> navigationHandler, Runnable logoutHandler) {
+    /**
+     * Constructs the Sidebar navigation menu.
+     *
+     * @param navigationHandler A callback function that receives the selected {@link Screen} to navigate to.
+     * @param logoutHandler     A callback function executed when the user clicks the Logout button.
+     * @param exportHandler     A callback function executed when the user clicks the Export to CSV button.
+     */
+    public Sidebar(Consumer<Screen> navigationHandler, Runnable logoutHandler, Runnable exportHandler) {
         this.navigationHandler = navigationHandler;
         this.logoutHandler = logoutHandler;
+        this.exportHandler = exportHandler;
         buildUi();
     }
 
+    /**
+     * Initializes and arranges all JavaFX components within the sidebar.
+     * Dynamically loads navigation buttons based on the active user's role.
+     */
     private void buildUi() {
         setPrefWidth(200);
         setMinWidth(180);
@@ -57,7 +70,7 @@ public class Sidebar extends VBox {
 
         Role role = Session.getInstance().getRole();
         String roleText = switch (role) {
-            case MEDICAL_OFFICER  -> "Medical Officer";
+            case MEDICAL_OFFICER  -> "Medical Officer / Platoon Commander";
             case FIELD_MEDIC      -> "Field Medic";
             case LOGISTICS_OFFICER -> "Logistics Officer";
         };
@@ -86,6 +99,15 @@ public class Sidebar extends VBox {
             getChildren().add(navButton("Resupply Report", Screen.RESUPPLY_REPORT));
         }
 
+        Button exportBtn = new Button("Export to CSV");
+        exportBtn.setMaxWidth(Double.MAX_VALUE);
+        exportBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #198754; "
+                + "-fx-font-size: 13px; -fx-padding: 9 12 9 12; -fx-cursor: hand; "
+                + "-fx-background-radius: 6; -fx-alignment: CENTER_LEFT;");
+        exportBtn.setOnAction(e -> exportHandler.run());
+
+        getChildren().addAll(new Separator(), exportBtn);
+
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
@@ -103,6 +125,13 @@ public class Sidebar extends VBox {
         }
     }
 
+    /**
+     * Creates a standardized navigation button for the sidebar.
+     *
+     * @param label  The text displayed on the button.
+     * @param target The screen to navigate to when clicked.
+     * @return A styled JavaFX {@link Button}.
+     */
     private Button navButton(String label, Screen target) {
         Button btn = new Button(label);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -115,6 +144,11 @@ public class Sidebar extends VBox {
         return btn;
     }
 
+    /**
+     * Updates the visual styling to reflect the currently active navigation button.
+     *
+     * @param btn The button that was just clicked and should become active.
+     */
     private void activateButton(Button btn) {
         if (activeButton != null) {
             activeButton.setStyle(inactiveStyle());
@@ -123,12 +157,22 @@ public class Sidebar extends VBox {
         activeButton = btn;
     }
 
+    /**
+     * Provides the CSS styling string for unselected navigation buttons.
+     *
+     * @return A string containing inline JavaFX CSS rules.
+     */
     private String inactiveStyle() {
         return "-fx-background-color: transparent; -fx-text-fill: #c5d5e4; "
                 + "-fx-font-size: 13px; -fx-padding: 9 12 9 12; -fx-cursor: hand; "
                 + "-fx-background-radius: 6; -fx-alignment: CENTER_LEFT;";
     }
 
+    /**
+     * Provides the CSS styling string for the currently selected navigation button.
+     *
+     * @return A string containing inline JavaFX CSS rules.
+     */
     private String activeStyle() {
         return "-fx-background-color: #0d6efd; -fx-text-fill: white; "
                 + "-fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 9 12 9 12; "

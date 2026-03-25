@@ -35,7 +35,6 @@ public class MainAppScreen extends HBox {
     private final Logic logic;
     private final StackPane contentArea = new StackPane();
 
-    // Lazily created screens
     private PersonnelScreen personnelScreen;
     private FitPersonnelScreen fitPersonnelScreen;
     private DutyRosterScreen dutyRosterScreen;
@@ -58,14 +57,13 @@ public class MainAppScreen extends HBox {
         Sidebar sidebar = new Sidebar(this::showScreen, () -> {
             Session.getInstance().clear();
             logoutCallback.run();
-        });
+        }, this::handleExport);
 
         HBox.setHgrow(contentArea, Priority.ALWAYS);
         contentArea.setStyle("-fx-background-color: #f0f2f5; -fx-padding: 16;");
 
         getChildren().addAll(sidebar, contentArea);
 
-        // Navigate to the default home screen for this role
         Role role = Session.getInstance().getRole();
         if (role == Role.FIELD_MEDIC) {
             showScreen(Screen.INVENTORY);
@@ -127,6 +125,28 @@ public class MainAppScreen extends HBox {
                 }
                 contentArea.getChildren().add(resupplyReportScreen);
                 break;
+        }
+    }
+
+    /**
+     * Handles the CSV export process and shows a popup alert with the result.
+     */
+    private void handleExport() {
+        try {
+            java.nio.file.Path savedPath = meditrack.storage.CsvExportUtility.exportData(model.getMediTrack());
+
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            alert.setTitle("Export Successful");
+            alert.setHeaderText(null);
+            alert.setContentText("Data successfully exported to:\n" + savedPath.toAbsolutePath());
+            alert.showAndWait();
+
+        } catch (java.io.IOException e) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setTitle("Export Failed");
+            alert.setHeaderText(null);
+            alert.setContentText("Could not export data: " + e.getMessage());
+            alert.showAndWait();
         }
     }
 }

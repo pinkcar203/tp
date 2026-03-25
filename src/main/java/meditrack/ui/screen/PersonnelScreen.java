@@ -18,11 +18,18 @@ import meditrack.model.Status;
 import meditrack.storage.StorageManager;
 import meditrack.ui.modal.AddPersonnelModal;
 import meditrack.ui.modal.RemovePersonnelModal;
-
 import java.io.IOException;
 import java.util.List;
 
-/** Personnel list — med officer can edit, other roles view only. */
+/**
+ * Represents the Personnel Management UI screen.
+ * <p>
+ * Display and interaction are dynamically adjusted based on the current user's role:
+ * <ul>
+ * <li><b>Medical Officer:</b> Full access to edit the table, add/remove personnel, and update statuses inline.</li>
+ * <li><b>Other Roles:</b> Read-only access to view the roster.</li>
+ * </ul>
+ */
 public class PersonnelScreen extends VBox {
 
     private final ModelManager model;
@@ -34,8 +41,10 @@ public class PersonnelScreen extends VBox {
     private final Label statusLabel = new Label();
 
     /**
-     * @param model personnel data
-     * @param storage used to save after some actions
+     * Constructs the PersonnelScreen.
+     *
+     * @param model   The data model managing personnel records.
+     * @param storage The storage manager used to persist data changes after edits.
      */
     public PersonnelScreen(ModelManager model, StorageManager storage) {
         this.model = model;
@@ -45,6 +54,10 @@ public class PersonnelScreen extends VBox {
         refresh();
     }
 
+    /**
+     * Initializes and arranges all JavaFX components for this screen.
+     * Applies the layout fix to ensure the Add button stacks vertically beneath the title.
+     */
     private void buildUi() {
         setSpacing(12);
         setPadding(new Insets(20));
@@ -52,16 +65,14 @@ public class PersonnelScreen extends VBox {
         // Header
         Label title = new Label(readOnly ? "Personnel (Read-Only)" : "Personnel Management");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        HBox header = new HBox(title);
-        header.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(title, Priority.ALWAYS);
+        getChildren().add(title);
 
         if (!readOnly) {
             Button addBtn = new Button("+ Add Personnel");
             addBtn.setStyle("-fx-background-color: #0d6efd; -fx-text-fill: white; "
                     + "-fx-font-weight: bold; -fx-padding: 8 16 8 16; -fx-background-radius: 5;");
             addBtn.setOnAction(e -> openAddModal());
-            header.getChildren().add(addBtn);
+            getChildren().add(addBtn);
         }
 
         // Table
@@ -79,10 +90,14 @@ public class PersonnelScreen extends VBox {
 
         statusLabel.setStyle("-fx-font-size: 12px;");
 
-        getChildren().addAll(header, table, footer, statusLabel);
+        getChildren().addAll(table, footer, statusLabel);
         VBox.setVgrow(table, Priority.ALWAYS);
     }
 
+    /**
+     * Constructs the table columns, cell factories, and data binding.
+     * Injects an interactive ComboBox into the Status column for authorized roles.
+     */
     @SuppressWarnings("unchecked")
     private void buildTable() {
         TableColumn<Personnel, String> indexCol = new TableColumn<>("#");
@@ -117,6 +132,7 @@ public class PersonnelScreen extends VBox {
                         try {
                             new UpdateStatusCommand(idx, combo.getValue()).execute(model);
                             setFeedback("Status updated for " + p.getName() + ".", false);
+                            saveData();
                             refresh();
                         } catch (CommandException ex) {
                             setFeedback("Error: " + ex.getMessage(), true);
@@ -142,6 +158,10 @@ public class PersonnelScreen extends VBox {
         table.setPlaceholder(new Label("No personnel found. Use '+ Add Personnel' to get started."));
     }
 
+    /**
+     * Opens the modal dialogue to add a new personnel record.
+     * Executes the resulting command and triggers a UI refresh and data save upon success.
+     */
     private void openAddModal() {
         AddPersonnelModal modal = new AddPersonnelModal();
         modal.showAndWait().ifPresent(cmd -> {
@@ -156,6 +176,10 @@ public class PersonnelScreen extends VBox {
         });
     }
 
+    /**
+     * Opens the modal dialogue to confirm the removal of a selected personnel record.
+     * Executes the resulting command and triggers a UI refresh and data save upon success.
+     */
     private void openRemoveModal() {
         Personnel selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -167,6 +191,7 @@ public class PersonnelScreen extends VBox {
         modal.showAndWait().ifPresent(cmd -> {
             try {
                 CommandResult result = cmd.execute(model);
+                saveData();
                 setFeedback(result.getFeedbackToUser(), false);
                 refresh();
             } catch (CommandException ex) {
@@ -175,6 +200,10 @@ public class PersonnelScreen extends VBox {
         });
     }
 
+    /**
+     * Persists the current state of the data model to the local JSON file.
+     * Called automatically after successful add, remove, or edit actions.
+     */
     private void saveData() {
         try {
             storage.saveMediTrackData(model.getMediTrack());
@@ -182,12 +211,21 @@ public class PersonnelScreen extends VBox {
             setFeedback("Warning: could not save — " + ex.getMessage(), true);
         }
     }
-    /** Reloads the table from the model. */
+
+    /**
+     * Reloads the table view with the latest filtered personnel list from the model.
+     */
     public void refresh() {
         List<Personnel> all = model.getFilteredPersonnelList(null);
         tableData.setAll(all);
     }
 
+    /**
+     * Updates the status label at the bottom of the screen with operational feedback.
+     *
+     * @param message The text to display.
+     * @param isError True if the message represents an error (displays in red), false for success (green).
+     */
     private void setFeedback(String message, boolean isError) {
         statusLabel.setText(message);
         statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: "
