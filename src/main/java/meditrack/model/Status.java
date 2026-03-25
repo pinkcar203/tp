@@ -39,6 +39,10 @@ public enum Status {
                 return LIGHT_DUTY;
             case "MC":
                 return MC;
+            case "PENDING":
+                return PENDING;
+            case "CASUALTY":
+                return CASUALTY;
             default:
                 throw new IllegalArgumentException(
                         "Invalid status: \"" + value + "\". Valid values: FIT, LIGHT_DUTY, MC, CASUALTY, PENDING");

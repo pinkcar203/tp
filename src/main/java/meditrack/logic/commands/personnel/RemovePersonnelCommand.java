@@ -7,6 +7,7 @@ import meditrack.model.Model;
 import meditrack.model.ModelManager;
 import meditrack.model.Personnel;
 import meditrack.model.Role;
+import java.util.List;
 
 /** Removes a roster entry by 1-based index (matches the table). */
 public class RemovePersonnelCommand extends Command {
@@ -36,8 +37,8 @@ public class RemovePersonnelCommand extends Command {
 
     /** Medical officer only. */
     @Override
-    public Role getRequiredRole() {
-        return Role.MEDICAL_OFFICER;
+    public List<Role> getRequiredRoles() {
+        return List.of(Role.MEDICAL_OFFICER);
     }
 
     /** Returns the 1-based index for this command. */

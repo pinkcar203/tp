@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
@@ -90,8 +89,8 @@ public class GenerateResupplyReportCommand extends Command {
 
     /** Logistics officer only. */
     @Override
-    public Role getRequiredRole() {
-        return Role.LOGISTICS_OFFICER;
+    public List<Role> getRequiredRoles() {
+        return List.of(Role.LOGISTICS_OFFICER);
     }
 
     /** One flagged row for the report (supply + reason text). */

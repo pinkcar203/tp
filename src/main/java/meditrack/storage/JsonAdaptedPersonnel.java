@@ -73,8 +73,7 @@ public class JsonAdaptedPersonnel {
         try {
             parsedStatus = Status.fromString(status);
         } catch (IllegalArgumentException e) {
-            throw new CommandException("Invalid status value in data file: \"" + status + "\". "
-                    + "Valid values: FIT, LIGHT_DUTIES, UNFIT");
+            throw new CommandException("Invalid status value in data file: \"" + status + "\"");
         }
 
         return new Personnel(name.trim(), parsedStatus);

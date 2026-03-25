@@ -1,5 +1,6 @@
 package meditrack.logic.commands;
 
+import java.util.List;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
@@ -16,7 +17,7 @@ public abstract class Command {
     public abstract CommandResult execute(Model model) throws CommandException;
 
     /**
-     * Returns the role needed to run this command, or null if any role can run it.
+     * Returns a list of roles allowed to run this command, or an empty list/null if anyone can run it.
      */
-    public abstract Role getRequiredRole();
+    public abstract List<Role> getRequiredRoles();
 }

@@ -7,6 +7,8 @@ import meditrack.model.Model;
 import meditrack.model.ModelManager;
 import meditrack.model.Role;
 import meditrack.model.Status;
+import meditrack.model.Session;
+import java.util.List;
 
 /** Adds someone to the roster. Parser checks fields; model rejects duplicate names. */
 public class AddPersonnelCommand extends Command {
@@ -34,15 +36,22 @@ public class AddPersonnelCommand extends Command {
     /** Adds the person to the roster. */
     @Override
     public CommandResult execute(Model model) throws CommandException {
+        Role currentRole = Session.getInstance().getRole();
+
+        // Backend security check
+        if (currentRole == Role.PLATOON_COMMANDER && status != Status.PENDING) {
+            throw new CommandException("Platoon Commanders can only add personnel with PENDING status.");
+        }
+
         ModelManager manager = (ModelManager) model;
         manager.addPersonnel(name, status);
         return new CommandResult(String.format(MESSAGE_SUCCESS, name, status));
     }
 
-    /** Medical officer only. */
+    /** Medical officer and Platoon Commander. */
     @Override
-    public Role getRequiredRole() {
-        return Role.MEDICAL_OFFICER;
+    public List<Role> getRequiredRoles() {
+        return List.of(Role.MEDICAL_OFFICER, Role.PLATOON_COMMANDER);
     }
 
     /** Returns the name passed to the constructor. */

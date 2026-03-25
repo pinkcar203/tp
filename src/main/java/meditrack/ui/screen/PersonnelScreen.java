@@ -20,6 +20,7 @@ import meditrack.ui.modal.AddPersonnelModal;
 import meditrack.ui.modal.RemovePersonnelModal;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Represents the Personnel Management UI screen.
@@ -27,7 +28,7 @@ import java.util.List;
  * Permissions:
  * - Medical Officer: Full access (Add/Delete/Edit Status).
  * - Platoon Commander: Manage Roster (Add/Delete), but cannot edit medical status.
- * - Others: Read-only access.
+ * - Field Medic: Update casualty status.
  */
 public class PersonnelScreen extends VBox {
 
@@ -65,7 +66,7 @@ public class PersonnelScreen extends VBox {
         setPadding(new Insets(20));
 
         // Header
-        Label title = new Label(canAddDelete ? "Personnel Management" : "Personnel (Read-Only)");
+        Label title = new Label("Personnel Management");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         getChildren().add(title);
 
@@ -125,8 +126,7 @@ public class PersonnelScreen extends VBox {
                                 ? FXCollections.observableArrayList(Status.CASUALTY) // Medics can only flag casualties
                                 : FXCollections.observableArrayList(Status.values()); // MO gets all options
 
-                private final ComboBox<Status> combo =
-                        new ComboBox<>(FXCollections.observableArrayList(Status.values()));
+                private final ComboBox<Status> combo = new ComboBox<>(allowedStatuses);
                 {
                     combo.setOnAction(e -> {
                         Personnel p = getTableRow().getItem();
@@ -168,7 +168,7 @@ public class PersonnelScreen extends VBox {
         }
 
         table.getColumns().addAll(indexCol, nameCol, statusCol);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("No personnel found. Use '+ Add Personnel' to get started."));
     }
 
@@ -230,8 +230,18 @@ public class PersonnelScreen extends VBox {
      * Reloads the table view with the latest filtered personnel list from the model.
      */
     public void refresh() {
-        List<Personnel> all = model.getFilteredPersonnelList(null);
-        tableData.setAll(all);
+        Role currentRole = Session.getInstance().getRole();
+
+        List<Personnel> allPersonnel = model.getFilteredPersonnelList(null);
+
+        if (currentRole == Role.FIELD_MEDIC) {
+            List<Personnel> medicList = allPersonnel.stream()
+                    .filter(p -> p.getStatus() == Status.FIT || p.getStatus() == Status.CASUALTY)
+                    .collect(Collectors.toList());
+            tableData.setAll(medicList);
+        } else {
+            tableData.setAll(allPersonnel);
+        }
     }
 
     /**

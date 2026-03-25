@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * A dedicated dashboard for the Medical Officer to monitor casualties.
  * Automatically filters the roster to display only personnel who are currently
- * marked as UNFIT or on LIGHT_DUTIES.
+ * marked as MC or on LIGHT_DUTY.
  */
 public class MedicalAttentionScreen extends VBox {
 
@@ -47,7 +47,7 @@ public class MedicalAttentionScreen extends VBox {
         Label title = new Label("Medical Attention Required");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        Label subtitle = new Label("Showing personnel currently on LIGHT DUTIES or UNFIT status.");
+        Label subtitle = new Label("Showing personnel currently on LIGHT DUTY/MC/CASUALTY/PENDING status.");
         subtitle.setStyle("-fx-text-fill: #555555; -fx-font-size: 13px;");
 
         buildTable();

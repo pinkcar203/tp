@@ -3,7 +3,6 @@ package meditrack.logic.commands.personnel;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import meditrack.logic.commands.Command;
 import meditrack.logic.commands.CommandResult;
 import meditrack.logic.commands.exceptions.CommandException;
@@ -48,8 +47,8 @@ public class GenerateRosterCommand extends Command {
 
     /** Platoon commander only. */
     @Override
-    public Role getRequiredRole() {
-        return Role.PLATOON_COMMANDER;
+    public List<Role> getRequiredRoles() {
+        return List.of(Role.PLATOON_COMMANDER);
     }
 
     /** Last roster from {@link #execute}, or {@code null} if not run yet. */

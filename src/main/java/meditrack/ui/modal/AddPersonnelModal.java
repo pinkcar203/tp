@@ -8,6 +8,8 @@ import meditrack.logic.commands.personnel.AddPersonnelCommand;
 import meditrack.logic.parser.exceptions.ParseException;
 import meditrack.logic.parser.personnel.PersonnelParser;
 import meditrack.model.Status;
+import meditrack.model.Session;
+import meditrack.model.Role;
 
 /**
  * Modal dialog for adding a new personnel member.
@@ -17,18 +19,20 @@ import meditrack.model.Status;
  *
  * <p>Inline validation prevents the dialog from closing on OK if:
  * <ul>
- *   <li>Name is blank</li>
- *   <li>No status is selected</li>
+ * <li>Name is blank</li>
+ * <li>No status is selected</li>
  * </ul>
  */
 public class AddPersonnelModal extends Dialog<AddPersonnelCommand> {
 
     private final TextField nameField = new TextField();
-    private final ComboBox<Status> statusCombo =
-            new ComboBox<>(FXCollections.observableArrayList(Status.values()));
+    private final ComboBox<Status> statusCombo = new ComboBox<>();
     private final Label validationLabel = new Label();
 
-    /** Builds the add-personnel dialog (call {@link #showAndWait()}). */
+    /**
+     * Builds the add-personnel dialog.
+     * Call {@link #showAndWait()} to display it to the user.
+     */
     public AddPersonnelModal() {
         setTitle("Add Personnel");
         setHeaderText("Enter new personnel details");
@@ -36,9 +40,23 @@ public class AddPersonnelModal extends Dialog<AddPersonnelCommand> {
         wireResultConverter();
     }
 
+    /**
+     * Initializes and arranges the UI components within the dialog pane.
+     * Sets up the grid layout, input fields, and the event filter to block
+     * the dialog from closing if validation fails.
+     */
     private void buildContent() {
         nameField.setPromptText("Full name");
-        statusCombo.setValue(Status.PENDING); // default
+
+        Role currentRole = Session.getInstance().getRole();
+        if (currentRole == Role.PLATOON_COMMANDER) {
+            statusCombo.setItems(FXCollections.observableArrayList(Status.PENDING));
+            statusCombo.setValue(Status.PENDING);
+            statusCombo.setDisable(true);
+        } else {
+            statusCombo.setItems(FXCollections.observableArrayList(Status.values()));
+            statusCombo.setValue(Status.PENDING);
+        }
 
         validationLabel.setStyle("-fx-text-fill: #dc3545; -fx-font-size: 11px;");
         validationLabel.setVisible(false);
@@ -73,6 +91,12 @@ public class AddPersonnelModal extends Dialog<AddPersonnelCommand> {
         });
     }
 
+    /**
+     * Validates the user's input before allowing the dialog to be submitted.
+     * Checks that the name field is not blank and a status is selected.
+     *
+     * @return true if the inputs are valid, false otherwise.
+     */
     private boolean validate() {
         if (nameField.getText() == null || nameField.getText().isBlank()) {
             showError("Name must not be blank.");
@@ -87,23 +111,40 @@ public class AddPersonnelModal extends Dialog<AddPersonnelCommand> {
         return true;
     }
 
+    /**
+     * Displays an inline validation error message within the dialog.
+     *
+     * @param msg The error message to display to the user.
+     */
     private void showError(String msg) {
         validationLabel.setText("⚠  " + msg);
         validationLabel.setVisible(true);
         validationLabel.setManaged(true);
     }
 
+    /**
+     * Configures the result converter to translate a successful dialog submission
+     * (clicking the OK button) into an {@link AddPersonnelCommand}.
+     * If the user cancels or parsing fails, it returns null.
+     */
     private void wireResultConverter() {
         setResultConverter(buttonType -> {
             if (buttonType != ButtonType.OK) {
                 return null;
             }
+
+            Status finalStatus = statusCombo.getValue();
+            if (Session.getInstance().getRole() == Role.PLATOON_COMMANDER) {
+                finalStatus = Status.PENDING;
+            }
+
             try {
                 return PersonnelParser.parseAddPersonnel(
                         "n/" + nameField.getText().trim()
-                                + " s/" + statusCombo.getValue().name());
+                                + " s/" + finalStatus.name());
             } catch (ParseException e) {
-                return null; // already blocked by validate()
+                System.out.println("Parser Failed: " + e.getMessage());
+                return null;
             }
         });
     }

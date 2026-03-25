@@ -12,7 +12,7 @@ import meditrack.model.Status;
  */
 public class PersonnelParser {
 
-    private static final String STATUS_VALID = "FIT, LIGHT_DUTIES, UNFIT";
+    private static final String STATUS_VALID = "FIT, LIGHT_DUTY, MC, CASUALTY, PENDING";
 
     /**
      * Expected format: {@code add_personnel n/NAME s/STATUS}

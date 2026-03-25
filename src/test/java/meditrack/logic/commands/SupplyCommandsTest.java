@@ -45,7 +45,7 @@ class SupplyCommandsTest {
     @Test
     void addSupplyCommand_requiredRole_isFieldMedic() {
         AddSupplyCommand cmd = new AddSupplyCommand("Test", 1, LocalDate.of(2027, 1, 1));
-        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRole());
+        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());
     }
 
     @Test
@@ -74,7 +74,7 @@ class SupplyCommandsTest {
         EditSupplyCommand cmd = new EditSupplyCommand(
                 Index.fromOneBased(1),
                 new Supply("Test", 10, LocalDate.of(2027, 1, 1)));
-        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRole());
+        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());
     }
 
     // Delete Supply Command Tests
@@ -99,7 +99,7 @@ class SupplyCommandsTest {
     @Test
     void deleteSupplyCommand_requiredRole_isFieldMedic() {
         DeleteSupplyCommand cmd = new DeleteSupplyCommand(Index.fromOneBased(1));
-        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRole());
+        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());
     }
 
     @Test
@@ -156,6 +156,6 @@ class SupplyCommandsTest {
     @Test
     void generateResupplyReport_requiredRole_isLogisticsOfficer() {
         GenerateResupplyReportCommand cmd = new GenerateResupplyReportCommand(20, 30);
-        assertEquals(Role.LOGISTICS_OFFICER, cmd.getRequiredRole());
+        assertEquals(Role.LOGISTICS_OFFICER, cmd.getRequiredRoles());
     }
 }

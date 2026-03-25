@@ -1,7 +1,7 @@
 package meditrack.logic.commands;
 
 import java.util.Objects;
-
+import java.util.List;
 import meditrack.commons.core.Index;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
@@ -47,7 +47,7 @@ public class EditSupplyCommand extends Command {
 
     /** Field medic only. */
     @Override
-    public Role getRequiredRole() {
-        return Role.FIELD_MEDIC;
+    public List<Role> getRequiredRoles() {
+        return List.of(Role.FIELD_MEDIC);
     }
 }

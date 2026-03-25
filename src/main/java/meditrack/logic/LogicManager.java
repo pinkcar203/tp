@@ -1,7 +1,7 @@
 package meditrack.logic;
 
 import java.io.IOException;
-
+import java.util.List;
 import meditrack.logic.commands.Command;
 import meditrack.logic.commands.CommandResult;
 import meditrack.logic.commands.exceptions.CommandException;
@@ -29,12 +29,14 @@ public class LogicManager implements Logic {
     /** Runs the command, checks role, then saves to storage. */
     @Override
     public CommandResult executeCommand(Command command) throws CommandException {
-        // Role enforcement: check that the current session role matches the command's requirement
-        if (command.getRequiredRole() != null) {
-            var currentRole = model.getSession().getRole();
-            if (currentRole == null || !currentRole.equals(command.getRequiredRole())) {
+        List<Role> allowedRoles = command.getRequiredRoles();
+
+        if (allowedRoles != null && !allowedRoles.isEmpty()) {
+            Role currentRole = model.getSession().getRole();
+
+            if (currentRole == null || !allowedRoles.contains(currentRole)) {
                 throw new CommandException("You do not have permission to execute this command. "
-                        + "Required role: " + command.getRequiredRole());
+                        + "Allowed roles: " + allowedRoles);
             }
         }
 
