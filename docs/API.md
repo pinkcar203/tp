@@ -33,14 +33,14 @@ valid status enum values.
 and why.
 * **Validation rules by command type:**
 
-  | Command | Rules enforced |
-  |---|---|
+  | Command | Rules enforced                                                                             |
+  |---|--------------------------------------------------------------------------------------------|
   | `ADD_SUPPLY` / `EDIT_SUPPLY` | Name non-empty, quantity > 0, expiry date is a valid future date, no duplicate name on add |
-  | `DELETE_SUPPLY` / `REMOVE_PERSONNEL` | Index is a positive integer within list bounds |
-  | `ADD_PERSONNEL` | Name non-empty, status is a valid Status enum value |
-  | `UPDATE_STATUS` | Status is one of `FIT`, `LIGHT_DUTIES`, `UNFIT` |
-  | `GENERATE_ROSTER` | At least one FIT personnel record exists |
-  | `GENERATE_RESUPPLY_REPORT` | At least one supply record exists |
+  | `DELETE_SUPPLY` / `REMOVE_PERSONNEL` | Index is a positive integer within list bounds                                             |
+  | `ADD_PERSONNEL` | Name non-empty, status is a valid Status enum value                                        |
+  | `UPDATE_STATUS` | Status is one of `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, `PENDING`                           |
+  | `GENERATE_ROSTER` | At least one FIT personnel record exists                                                   |
+  | `GENERATE_RESUPPLY_REPORT` | At least one supply record exists                                                          |
 
 * **Example usage:**
 ```java
@@ -72,15 +72,15 @@ pre-validated Command objects from the UI, verifies role-based permissions via t
 against the Model, and triggers a save via Storage after every state-changing operation.
 
 ### `Logic.executeCommand(Command command)`
-* **Description:** Receives a fully constructed and pre-validated Command object from the UI layer, checks the active 
-role via `model.getSession()` to confirm the action is permitted for that role, executes the command against the Model, 
-and saves the updated state to Storage.
+* **Description:** Receives a fully constructed and pre-validated Command object from the UI layer. It calls 
+`command.getRequiredRoles()` and checks the active role via `model.getSession()` to confirm the action is permitted 
+for that role. It then executes the command against the Model, and saves the updated state to Storage.
 * **Parameters:** 
   * `command` (Command): A fully constructed Command object built by the UI after successful Parser validation.
 * **Return values:** `CommandResult` - An object containing the feedback message to display to the user and any 
 specific UI update instructions.
-* **Exceptions:** Throws a `CommandException` if the current Session role does not have permission to execute the 
-given command type.
+* **Exceptions:** Throws a `CommandException` if the current Session role is not contained within the command's 
+allowed roles list.
 * **Example usage:**
 ```java
 Command command = new AddSupplyCommand("Panadol", 50, LocalDate.of(2027, 6, 1));
@@ -108,7 +108,8 @@ Session currentSession = model.getSession();
 * **Description:** Sets the active role in the Session after a successful login. Called by the UI login screen after 
 `PasswordManager.checkPassword()` returns true.
 * **Parameters / inputs:**
-  * `role` (Role): The authenticated role (`FIELD_MEDIC`, `MEDICAL_OFFICER`, or `LOGISTICS_OFFICER`).
+  * `role` (Role): The authenticated role (`FIELD_MEDIC`, `MEDICAL_OFFICER`, `LOGISTICS_OFFICER`, 
+  or `PLATOON_COMMANDER`).
 * **Return values:** `void`
 * **Example usage:** 
 ```java
@@ -186,7 +187,7 @@ List<Supply> lowStock = model.getLowStockSupplies(20);
 * **Return values:** `void`
 * **Example usage:** 
 ```java
-model.addPersonnel(new Personnel("John Doe", Status.FIT));
+model.addPersonnel(new Personnel("John Doe", Status.PENDING));
 ```
 
 ### `Model.deletePersonnel(Index targetIndex)`
@@ -201,24 +202,25 @@ Personnel removed = model.deletePersonnel(Index.fromOneBased(3));
 
 ### `Model.setPersonnelStatus(Personnel target, Status newStatus)`
 * **Description:** Updates the medical readiness status of a specific personnel record without modifying any 
-other fields.
+other fields. Valid statuses include `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, or `PENDING`.
 * **Parameters / inputs:** 
   * `target` (Personnel): The specific personnel object to update.
-  * `newStatus` (Status): The new medical status (e.g., `FIT`, `LIGHT_DUTIES`, or `UNFIT`).
+  * `newStatus` (Status): The new medical status (e.g., `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, or `PENDING`).
 * **Return values:** `void`
 * **Example usage:** 
 ```java
-model.setPersonnelStatus(johnDoe, Status.LIGHT_DUTIES);
+model.setPersonnelStatus(johnDoe, Status.LIGHT_DUTY);
 ```
 
-### `Model.getFilteredPersonnelList()`
-* **Description:** Retrieves the list of personnel based on the active session's filters (e.g., showing only `FIT` 
-personnel for the Medical Officer). The list updates automatically when the underlying data changes.
-* **Parameters / inputs:** None.
-* **Return values:** `ObservableList<Personnel>` - A live list that automatically triggers UI updates when modified.
+### `Model.getFilteredPersonnelList(Status statusFilter)`
+* **Description:** Retrieves the list of personnel based on the provided status filter. Passing `null` returns 
+the entire unfiltered roster. The UI may further filter this list based on the active session role 
+(e.g., Field Medics only seeing `FIT` and `CASUALTY`).
+* **Parameters / inputs:** `statusFilter` (Status): The specific status to filter by, or `null` for all.
+* **Return values:** `List<Personnel>` - The requested personnel list.
 * **Example usage:** 
 ```java
-personnelTableView.setItems(model.getFilteredPersonnelList());
+List<Personnel> allPersonnel = model.getFilteredPersonnelList(null);
 ```
 
 ### `Model.generateResupplyReport()`
@@ -273,6 +275,21 @@ it to the local JSON file. Called automatically by the Logic layer after every s
 * **Example usage:** 
 ```java
 storage.saveMediTrackData(model.getMediTrack());
+```
+
+### `CsvExportUtility.exportData(ReadOnlyMediTrack data, Role currentRole)`
+* **Description:** A static utility method that exports the application data to a CSV file. It implements 
+Role-Based Access Control (RBAC): Medical Officers and Platoon Commanders export the Personnel Roster, 
+Logistics Officers export the Supply Inventory, and Field Medics export both. It automatically flags items 
+requiring medical attention or restocking.
+* **Parameters:** * `data` (ReadOnlyMediTrack): A read-only snapshot of the current state of the application.
+  * `currentRole` (Role): The active role of the user requesting the export.
+* **Return values:** `Path` - The file path where the CSV was successfully saved (saved in an 
+auto-generated `/exports` directory).
+* **Exceptions:** Throws `IOException` if the application lacks permission to create the directory or write the file.
+* **Example usage:** 
+```java
+  Path savedPath = CsvExportUtility.exportData(model.getMediTrack(), model.getSession().getRole());
 ```
 
 ---
