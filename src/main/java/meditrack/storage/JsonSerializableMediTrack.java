@@ -17,7 +17,7 @@ public class JsonSerializableMediTrack {
     public final List<JsonAdaptedDutySlot> dutySlots = new ArrayList<>();
 
     /**
-     * Constructs a {@code JsonSerializableMediTrack} with the given data.
+     * Constructs a JsonSerializableMediTrack with the given data.
      *
      * @param passwordHash The BCrypt hash of the master application password.
      * @param supplies     A list of serialized supply items.

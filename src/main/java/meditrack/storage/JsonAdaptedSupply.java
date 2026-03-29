@@ -21,9 +21,6 @@ public class JsonAdaptedSupply {
     public final int quantity;
     public final String expiryDate;
 
-    /**
-     * Jackson constructor; not used directly from app code.
-     */
     @JsonCreator
     public JsonAdaptedSupply(@JsonProperty("name") String name,
                              @JsonProperty("quantity") int quantity,
@@ -34,7 +31,7 @@ public class JsonAdaptedSupply {
     }
 
     /**
-     * Converts a domain {@link Supply} object into its JSON-friendly form.
+     * Converts a domain Supply object into its JSON-friendly form.
      */
     public static JsonAdaptedSupply fromModelType(Supply source) {
         return new JsonAdaptedSupply(
@@ -44,7 +41,7 @@ public class JsonAdaptedSupply {
     }
 
     /**
-     * Converts this JSON DTO back into a domain {@link Supply} object.
+     * Converts this JSON DTO back into a domain Supply object.
      *
      * @throws CommandException if any stored field is null, blank, or invalid
      */

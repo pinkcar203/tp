@@ -11,11 +11,14 @@ import meditrack.model.Personnel;
 import meditrack.model.ReadOnlyMediTrack;
 
 /**
- * Saves and loads {@link MediTrack} data to {@code data.json} via Jackson.
+ * Saves and loads MediTrack data to data.json via Jackson.
  */
 public class StorageManager implements Storage {
 
     private final JsonMediTrackStorage jsonStorage;
+
+    /** Cached password hash so saves never need to re-read the file. */
+    private String cachedPasswordHash;
 
     /** Creates a storage manager using the default JSON file path. */
     public StorageManager() {
@@ -37,6 +40,8 @@ public class StorageManager implements Storage {
         }
 
         JsonSerializableMediTrack serializable = rawData.get();
+        cachedPasswordHash = serializable.passwordHash;
+
         MediTrack mediTrack = new MediTrack();
 
         for (JsonAdaptedPersonnel adapted : serializable.personnel) {
@@ -70,14 +75,13 @@ public class StorageManager implements Storage {
         return Optional.of(mediTrack);
     }
 
-    /** Writes {@code data} to data.json. */
+    /** Writes data to data.json. */
     @Override
     public void saveMediTrackData(ReadOnlyMediTrack data) throws IOException {
         List<JsonAdaptedPersonnel> adaptedPersonnel = data.getPersonnelList()
                 .stream()
                 .map(JsonAdaptedPersonnel::fromModelType)
                 .toList();
-
         List<JsonAdaptedSupply> adaptedSupplies = data.getSupplyList()
                 .stream()
                 .map(JsonAdaptedSupply::fromModelType)
@@ -88,12 +92,14 @@ public class StorageManager implements Storage {
                 .map(JsonAdaptedDutySlot::fromModelType)
                 .toList();
 
-        String passwordHash = jsonStorage.readData()
-                .map(d -> d.passwordHash)
-                .orElse(null);
+        if (cachedPasswordHash == null) {
+            cachedPasswordHash = jsonStorage.readData()
+                    .map(d -> d.passwordHash)
+                    .orElse(null);
+        }
 
         JsonSerializableMediTrack serializableData =
-                new JsonSerializableMediTrack(passwordHash, adaptedSupplies,
+                new JsonSerializableMediTrack(cachedPasswordHash, adaptedSupplies,
                         adaptedPersonnel, adaptedDutySlots);
 
         jsonStorage.saveData(serializableData);

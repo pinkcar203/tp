@@ -1,5 +1,6 @@
 package meditrack.model;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import javafx.collections.ObservableList;
@@ -7,34 +8,21 @@ import javafx.collections.ObservableList;
 import meditrack.commons.core.Index;
 import meditrack.logic.commands.exceptions.CommandException;
 
-/**
- * API of the Model component.
- */
+/** Model facade. */
 public interface Model {
 
-    /**
-     * Retrieves the current Session object.
-     */
     Session getSession();
 
-    /**
-     * Sets the active role in the Session after a successful login.
-     */
+    /** After login who the user is acting as. */
     void setRole(Role role);
 
-    /**
-     * Adds a new supply to the inventory.
-     * The supply name must not already exist (case-insensitive).
-     */
+    /** Fails if same supply name already exists. */
     void addSupply(Supply supply);
 
-    /**
-     * Replaces the supply at {@code targetIndex} with {@code editedSupply}.
-     */
     void editSupply(Index targetIndex, Supply editedSupply);
 
     /**
-     * Deletes and returns the supply at {@code targetIndex}.
+     * Deletes and returns the supply at index.
      */
     Supply deleteSupply(Index targetIndex);
 
@@ -44,17 +32,18 @@ public interface Model {
     ObservableList<Supply> getFilteredSupplyList();
 
     /**
-     * Returns supplies expiring within {@code daysThreshold} days, sorted by expiry date ascending.
+     * Returns supplies expiring within daysThreshold days, sorted by expiry
+     * date ascending.
      */
     List<Supply> getExpiringSupplies(int daysThreshold);
 
     /**
-     * Returns supplies with quantity below {@code quantityThreshold}, sorted by quantity ascending.
+     * Returns supplies with quantity below threshold
      */
     List<Supply> getLowStockSupplies(int quantityThreshold);
 
     /**
-     * Returns a read-only view of the underlying MediTrack data (for Storage serialisation).
+     * Returns a read-only view of the underlying MediTrack data
      */
     ReadOnlyMediTrack getMediTrack();
 
@@ -62,6 +51,12 @@ public interface Model {
      * Adds a new personnel member to the roster.
      */
     void addPersonnel(String name, Status status) throws CommandException;
+
+    /**
+     * Adds a new personnel member with optional medical profile fields.
+     */
+    void addPersonnel(String name, Status status, BloodGroup bloodGroup, String allergies)
+            throws CommandException;
 
     /**
      * Removes a personnel member by 1-based index.
@@ -84,16 +79,11 @@ public interface Model {
     ObservableList<Personnel> getPersonnelList();
 
     /**
-     * Generates a randomised duty roster from FIT personnel.
-     */
-    List<Personnel> generateRoster() throws CommandException;
-
-    /**
      * Returns the total number of personnel in the roster.
      */
     int getPersonnelCount();
 
-    // ── Duty slot management ──────────────────────────────────────────────────
+    // Duty slot management
 
     /**
      * Returns an unmodifiable snapshot of scheduled duty slots.
@@ -106,7 +96,7 @@ public interface Model {
     void addDutySlot(DutySlot slot);
 
     /**
-     * Removes the duty slot at the given zero-based index.
+     * Removes the duty slot at the given index.
      *
      * @throws CommandException if the index is out of bounds
      */
@@ -118,7 +108,12 @@ public interface Model {
     void clearDutySlots();
 
     /**
-     * Replaces the duty slot at {@code zeroBasedIndex} with {@code newSlot}.
+     * Removes all duty slots scheduled on the given date.
+     */
+    void clearDutySlotsForDate(LocalDate date);
+
+    /**
+     * Replaces the duty slot at index with newSlot.
      *
      * @throws CommandException if the index is out of bounds
      */

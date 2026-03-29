@@ -5,8 +5,6 @@ import java.util.Objects;
 
 /**
  * Represents a medical supply item in the inventory.
- * Name is case-insensitively unique so we don't end up with
- * both "Bandages" and "bandages" in the list.
  */
 public class Supply {
 
@@ -56,7 +54,7 @@ public class Supply {
         return Objects.hash(name.toLowerCase());
     }
 
-    /** Debug-style string with all fields. */
+    /** String with all fields. */
     @Override
     public String toString() {
         return String.format("Supply{name='%s', quantity=%d, expiryDate=%s}", name, quantity, expiryDate);

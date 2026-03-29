@@ -24,14 +24,14 @@ public class GenerateResupplyReportCommand extends Command {
 
     /**
      * @param quantityThreshold counts as low stock below this quantity
-     * @param daysThreshold expiring within this many days (from today) is flagged
+     * @param daysThreshold     expiring within this many days is flagged
      */
     public GenerateResupplyReportCommand(int quantityThreshold, int daysThreshold) {
         this.quantityThreshold = quantityThreshold;
         this.daysThreshold = daysThreshold;
     }
 
-    /** Shared helper so the UI table uses the same rules as the command. */
+    /** Shared helper. */
     public static List<ReportEntry> collectFlaggedEntries(Model model, int quantityThreshold,
             int daysThreshold) {
         List<Supply> lowStock = model.getLowStockSupplies(quantityThreshold);
@@ -93,7 +93,7 @@ public class GenerateResupplyReportCommand extends Command {
         return List.of(Role.LOGISTICS_OFFICER);
     }
 
-    /** One flagged row for the report (supply + reason text). */
+    /** One flagged row for the report. */
     public static class ReportEntry {
         private final Supply supply;
         private final String reason;

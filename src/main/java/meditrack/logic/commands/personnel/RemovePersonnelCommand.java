@@ -9,7 +9,7 @@ import meditrack.model.Personnel;
 import meditrack.model.Role;
 import java.util.List;
 
-/** Removes a roster entry by 1-based index (matches the table). */
+/** Removes a roster entry by 1-based index. */
 public class RemovePersonnelCommand extends Command {
 
     public static final String COMMAND_WORD = "remove_personnel";
@@ -22,7 +22,7 @@ public class RemovePersonnelCommand extends Command {
 
     private final int oneBasedIndex;
 
-    /** @param oneBasedIndex row number as shown in the UI */
+    /** @param oneBasedIndex row number */
     public RemovePersonnelCommand(int oneBasedIndex) {
         this.oneBasedIndex = oneBasedIndex;
     }

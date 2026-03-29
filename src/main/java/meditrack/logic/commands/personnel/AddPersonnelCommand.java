@@ -1,16 +1,17 @@
 package meditrack.logic.commands.personnel;
 
+import java.util.List;
+
 import meditrack.logic.commands.Command;
 import meditrack.logic.commands.CommandResult;
 import meditrack.logic.commands.exceptions.CommandException;
+import meditrack.model.BloodGroup;
 import meditrack.model.Model;
-import meditrack.model.ModelManager;
 import meditrack.model.Role;
-import meditrack.model.Status;
 import meditrack.model.Session;
-import java.util.List;
+import meditrack.model.Status;
 
-/** Adds someone to the roster. Parser checks fields; model rejects duplicate names. */
+/** Adds someone to the roster. */
 public class AddPersonnelCommand extends Command {
 
     public static final String COMMAND_WORD = "add_personnel";
@@ -23,14 +24,32 @@ public class AddPersonnelCommand extends Command {
 
     private final String name;
     private final Status status;
+    private final BloodGroup bloodGroup;
+    private final String allergies;
 
     /**
-     * @param name personnel name (already validated when used from UI)
+     * Creates a command with name and status only.
+     *
+     * @param name   personnel name
      * @param status status enum
      */
     public AddPersonnelCommand(String name, Status status) {
-        this.name = name;
-        this.status = status;
+        this(name, status, null, "");
+    }
+
+    /**
+     * Creates a command with full medical profile fields.
+     *
+     * @param name       personnel name
+     * @param status     status enum
+     * @param bloodGroup ABO+Rh classification
+     * @param allergies  known allergies description
+     */
+    public AddPersonnelCommand(String name, Status status, BloodGroup bloodGroup, String allergies) {
+        this.name       = name;
+        this.status     = status;
+        this.bloodGroup = bloodGroup;
+        this.allergies  = (allergies == null) ? "" : allergies;
     }
 
     /** Adds the person to the roster. */
@@ -38,13 +57,11 @@ public class AddPersonnelCommand extends Command {
     public CommandResult execute(Model model) throws CommandException {
         Role currentRole = Session.getInstance().getRole();
 
-        // Backend security check
         if (currentRole == Role.PLATOON_COMMANDER && status != Status.PENDING) {
             throw new CommandException("Platoon Commanders can only add personnel with PENDING status.");
         }
 
-        ModelManager manager = (ModelManager) model;
-        manager.addPersonnel(name, status);
+        model.addPersonnel(name, status, bloodGroup, allergies);
         return new CommandResult(String.format(MESSAGE_SUCCESS, name, status));
     }
 
@@ -62,5 +79,15 @@ public class AddPersonnelCommand extends Command {
     /** Returns the status passed to the constructor. */
     public Status getStatus() {
         return status;
+    }
+
+    /** Returns the blood group, or {@code null} if not recorded. */
+    public BloodGroup getBloodGroup() {
+        return bloodGroup;
+    }
+
+    /** Returns the allergies string. */
+    public String getAllergies() {
+        return allergies;
     }
 }

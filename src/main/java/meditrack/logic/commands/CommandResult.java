@@ -4,14 +4,14 @@ import java.util.Objects;
 
 /**
  * Represents the result of a command execution.
- * Contains the feedback message to be displayed to the user in the UI.
+ * Contains the feedback message to be displayed to the user.
  */
 public class CommandResult {
 
     private final String feedbackToUser;
 
     /**
-     * Constructs a {@code CommandResult} with the specified feedback message.
+     * Constructs a CommandResult with the specified feedback message.
      *
      * @param feedbackToUser The message to display to the user. Must not be null.
      */
@@ -20,7 +20,7 @@ public class CommandResult {
     }
 
     /**
-     * Retrieves the feedback message intended for the user.
+     * Shows the feedback message.
      *
      * @return The feedback string.
      */

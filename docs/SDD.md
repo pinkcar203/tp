@@ -6,7 +6,7 @@
 
 MediTrack is a standalone JavaFX desktop application built to help military field units manage medical supply inventories and track the medical readiness of their personnel, all in one place, with no internet required.
 
-The application supports three user roles: Field Medic, Medical Officer / Platoon Commander, and Logistics Officer. Each role gets a different view of the system after logging in, so users only see what's relevant to them. Everything is stored locally in a JSON file, meaning the app works completely offline with no external dependencies.
+The application supports four user roles: Field Medic, Medical Officer, Platoon Commander, and Logistics Officer. Each role gets a different view of the system after logging in, so users only see what's relevant to them. Everything is stored locally in a JSON file, meaning the app works completely offline with no external dependencies.
 
 ### 1.1 Design Goals
 
@@ -57,18 +57,23 @@ Built entirely in JavaFX. The UI talks to Logic through a single method: `Logic.
 - Expiring Soon: automatically filtered view of supplies expiring within 30 days
 - Personnel: read-only personnel table for situational awareness
 
-**Medical Officer / Platoon Commander screens**
-- Personnel: full personnel table with add, remove, and inline status update
+**Medical Officer screens**
+- Personnel: full personnel table with add, remove, and inline status update (any status)
+- Medical Attention: filtered view of personnel requiring attention (PENDING, CASUALTY, MC, LIGHT_DUTY) with colour-coded status badges
+
+**Platoon Commander screens**
+- Personnel: personnel table with add (forced PENDING status) and remove
 - FIT Personnel: filtered view of FIT personnel with a live headcount
-- Duty Roster: generates a randomised roster from FIT personnel, can be regenerated
+- Duty Roster: date-navigated duty schedule with add, edit, remove, clear day, and auto-generate actions
 
 **Logistics Officer screens**
-- Supply Levels: read-only view of the full inventory
+- Supply Levels: read-only view of the full inventory with low-stock highlighting
 - Resupply Report: auto-generated report flagging low stock and items nearing expiry
 
 **Shared modal dialogs**
 - Add Supply, Edit Supply, Delete Supply (with confirmation)
 - Add Personnel, Remove Personnel (with confirmation)
+- Add Slot (duty roster), Auto-Generate (duty roster), Clear Day confirmation
 
 ### 3.2 Logic Component
 
@@ -77,7 +82,8 @@ This is the execution engine of the app. It receives Command objects from the UI
 Key classes:
 - `LogicManager`: the central coordinator, implements the `Logic` interface
 - `Command` (abstract): base class for all commands
-- Concrete commands: `AddSupplyCommand`, `EditSupplyCommand`, `DeleteSupplyCommand`, `AddPersonnelCommand`, `RemovePersonnelCommand`, `UpdateStatusCommand`, `GenerateRosterCommand`, `GenerateResupplyReportCommand`
+- Concrete commands: `AddSupplyCommand`, `EditSupplyCommand`, `DeleteSupplyCommand`, `AddPersonnelCommand`, `RemovePersonnelCommand`, `UpdateStatusCommand`, `GenerateResupplyReportCommand`
+- `RosterAutoGenerator`: static utility that generates randomised duty rosters from FIT personnel with constraint satisfaction (no overlap + 8-hour break rule)
 
 LogicManager reads the role from model.getSession().getRole() If the current role doesn't have permission, a CommandException is thrown and the UI shows it as an error result.
 
@@ -97,8 +103,7 @@ Validation rules by command:
 | ADD_SUPPLY / EDIT_SUPPLY | Name is non-empty, quantity > 0, expiry date is valid and in the future, no duplicate name on add |
 | DELETE_SUPPLY / REMOVE_PERSONNEL | Index is a positive integer within the current list bounds |
 | ADD_PERSONNEL | Name is non-empty, status is a valid `Status` enum value |
-| UPDATE_STATUS | Status must be one of: `FIT`, `LIGHT_DUTIES`, `UNFIT` |
-| GENERATE_ROSTER | At least one FIT personnel record must exist |
+| UPDATE_STATUS | Status must be one of: `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, `PENDING` |
 | GENERATE_RESUPPLY_REPORT | At least one supply record must exist |
 
 ### 3.4 Model Component
@@ -106,26 +111,30 @@ Validation rules by command:
 The Model component is responsible for holding the application's in-memory state. It exposes `ObservableList`s so that JavaFX can automatically update the UI whenever the underlying data changes, and provides filter and query methods used by the report screens.
 
 Key classes:
-- `Session` : tracks which Role is currently logged in
-- `ModelManager`: the concrete implementation of the `Model` interface that acts as the central point of access for all data operations
-- `MediTrack`: the root data container, holding both the supply list and the personnel list
-- `Supply`: represents a medical supply item with a name (String), quantity (int), and expiryDate (LocalDate)
-- `Personnel`: represents a person with a name (String) and a fitness status (Status enum)
-- `Status`: enum with three values: `FIT`, `LIGHT_DUTIES`, `UNFIT`
 - `Session`: a singleton that tracks which Role is currently logged in; this is not written to disk
-- `Role`: enum with three values: `FIELD_MEDIC`, `MEDICAL_OFFICER`, `LOGISTICS_OFFICER`
+- `ModelManager`: the concrete implementation of the `Model` interface that acts as the central point of access for all data operations
+- `MediTrack`: the root data container, holding the supply list, personnel list, and duty slot list
+- `Supply`: represents a medical supply item with a name (String), quantity (int), and expiryDate (LocalDate)
+- `Personnel`: represents a person with a name (String), status (Status), bloodGroup (BloodGroup), and allergies (String)
+- `DutySlot`: represents a scheduled duty assignment with date (LocalDate), startTime/endTime (LocalTime), dutyType (DutyType), and personnelName (String)
+- `Status`: enum with five values: `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, `PENDING`
+- `Role`: enum with four values: `FIELD_MEDIC`, `MEDICAL_OFFICER`, `PLATOON_COMMANDER`, `LOGISTICS_OFFICER`
+- `DutyType`: enum with five values: `GUARD_DUTY`, `MEDICAL_COVER`, `PATROL`, `STANDBY`, `SENTRY`
+- `BloodGroup`: enum with nine values: `A_POS`, `A_NEG`, `B_POS`, `B_NEG`, `AB_POS`, `AB_NEG`, `O_POS`, `O_NEG`, `UNKNOWN`
 
 ### 3.5 Storage Component
 
 The Storage component deals with reading from and writing to disk. It uses the Jackson library to serialise the Model's state into `data.json`. This file is rewritten after every command that modifies data, so the application always saves the latest state on exit.
 
 Key classes:
-- `StorageManager`: the concrete implementation of the `Storage` interface
+- `StorageManager`: the concrete implementation of the `Storage` interface; caches the BCrypt password hash in memory to prevent data corruption during concurrent read/write
 - `JsonMediTrackStorage`: handles the actual reading and writing of `data.json`
 - `JsonAdaptedSupply`: a JSON-friendly wrapper around `Supply`, used during serialisation and deserialisation
-- `JsonAdaptedPersonnel`: same idea, but for `Personnel`
+- `JsonAdaptedPersonnel`: same idea, but for `Personnel` (includes bloodGroup and allergies)
+- `JsonAdaptedDutySlot`: same idea, but for `DutySlot`
+- `CsvExportUtility`: static utility for role-filtered CSV data export with flags for medical attention and low/expiring stock
 
-The BCrypt password hash is saved as a top-level field in `data.json`, alongside the supplies and personnel arrays.
+The BCrypt password hash is saved as a top-level field in `data.json`, alongside the supplies, personnel, and duty slots arrays.
 
 ### 3.6 PasswordManager Component
 
@@ -165,13 +174,13 @@ Key classes:
 
 ---
 
-### 5.2 Duty Roster as a Stateless Operation
+### 5.2 Duty Roster as a Persisted Schedule
 
-**Decision:** The duty roster is generated fresh each time it is requested and is not saved to `data.json`.
+**Decision:** The duty roster is persisted to `data.json` as a list of structured `DutySlot` objects. Platoon Commanders can manually add individual slots, auto-generate slots using constraint-based logic, edit, remove, and clear slots by date.
 
-**Rationale:** The roster is really only meaningful for a single exercise cycle. Once that exercise is over, the data becomes stale, especially since personnel statuses can change between sessions. Saving it would add complexity without much benefit.
+**Rationale:** Persisting the roster allows Platoon Commanders to build up a schedule over multiple sessions and share the duty plan with other roles via CSV export. The auto-generation algorithm uses round-robin assignment with two hard constraints (no overlapping slots per person, minimum 8-hour break between assignments) to produce fair rosters automatically.
 
-**Trade-off:** The downside is that once the application closes, the roster is gone. If there is ever a need to keep a history of past rosters, a `RosterHistory` list could be added to the Model fairly easily without touching the rest of the architecture.
+**Trade-off:** Persisting duty data increases the size of `data.json` and requires backward compatibility handling for older files without duty slot data. However, the practical benefit of retaining scheduled rosters across sessions outweighs this cost.
 
 ### 5.3 BCrypt Password Hashing
 

@@ -1,7 +1,7 @@
 package meditrack.model;
 
 /**
- * Represents the type of duty assigned in a {@link DutySlot}.
+ * Represents the type of duty assigned.
  */
 public enum DutyType {
     GUARD_DUTY("Guard Duty"),
@@ -16,7 +16,7 @@ public enum DutyType {
         this.displayName = displayName;
     }
 
-    /** Human-readable label used in the UI. */
+    /** Label. */
     @Override
     public String toString() {
         return displayName;

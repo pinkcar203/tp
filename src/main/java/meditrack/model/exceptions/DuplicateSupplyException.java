@@ -1,7 +1,7 @@
 package meditrack.model.exceptions;
 
 /**
- * Thrown when trying to add a supply whose name already exists (case-insensitive).
+ * Thrown when trying to add a supply whose name already exists.
  */
 public class DuplicateSupplyException extends RuntimeException {
     /** Creates an exception with a default message. */

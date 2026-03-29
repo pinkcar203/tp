@@ -39,7 +39,6 @@ and why.
   | `DELETE_SUPPLY` / `REMOVE_PERSONNEL` | Index is a positive integer within list bounds                                             |
   | `ADD_PERSONNEL` | Name non-empty, status is a valid Status enum value                                        |
   | `UPDATE_STATUS` | Status is one of `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, `PENDING`                           |
-  | `GENERATE_ROSTER` | At least one FIT personnel record exists                                                   |
   | `GENERATE_RESUPPLY_REPORT` | At least one supply record exists                                                          |
 
 * **Example usage:**
@@ -180,58 +179,142 @@ List<Supply> expiring = model.getExpiringSupplies(30);
 List<Supply> lowStock = model.getLowStockSupplies(20);
 ```
 
-### `Model.addPersonnel(Personnel personnel)`
-* **Description:** Adds a new personnel record to the roster.
+### `Model.addPersonnel(String name, Status status)`
+* **Description:** Adds a new personnel record to the roster with the given name and status. Rejects duplicate
+names (case-insensitive).
 * **Parameters / inputs:**
-  * `personnel` (Personnel): A valid `Personnel` object containing name and initial status.
+  * `name` (String): The personnel member's name.
+  * `status` (Status): The initial medical readiness status.
 * **Return values:** `void`
-* **Example usage:** 
+* **Exceptions:** Throws `CommandException` if a personnel member with the same name already exists.
+* **Example usage:**
 ```java
-model.addPersonnel(new Personnel("John Doe", Status.PENDING));
+model.addPersonnel("John Doe", Status.PENDING);
 ```
 
-### `Model.deletePersonnel(Index targetIndex)`
-* **Description:** Removes a personnel record from the roster based on its displayed index in the UI table.
+### `Model.addPersonnel(String name, Status status, BloodGroup bloodGroup, String allergies)`
+* **Description:** Adds a new personnel record with optional medical profile fields (blood group and allergies).
 * **Parameters / inputs:**
-  * `targetIndex` (Index): The 1-based index of the personnel record as shown in the UI table.
+  * `name` (String): The personnel member's name.
+  * `status` (Status): The initial medical readiness status.
+  * `bloodGroup` (BloodGroup): The blood group (e.g., `A_POS`, `O_NEG`, `UNKNOWN`), or `null`.
+  * `allergies` (String): Known allergies as free text, or empty string.
+* **Return values:** `void`
+* **Exceptions:** Throws `CommandException` if a personnel member with the same name already exists.
+* **Example usage:**
+```java
+model.addPersonnel("John Doe", Status.PENDING, BloodGroup.O_POS, "Penicillin");
+```
+
+### `Model.deletePersonnel(int oneBasedIndex)`
+* **Description:** Removes a personnel record from the roster based on its 1-based displayed index in the UI table.
+* **Parameters / inputs:**
+  * `oneBasedIndex` (int): The 1-based index of the personnel record as shown in the UI table.
 * **Return values:** `Personnel` - Returns the deleted personnel object.
-* **Example usage:** 
+* **Exceptions:** Throws `CommandException` if the index is out of bounds.
+* **Example usage:**
 ```java
-Personnel removed = model.deletePersonnel(Index.fromOneBased(3));
+Personnel removed = model.deletePersonnel(3);
 ```
 
-### `Model.setPersonnelStatus(Personnel target, Status newStatus)`
-* **Description:** Updates the medical readiness status of a specific personnel record without modifying any 
-other fields. Valid statuses include `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, or `PENDING`.
-* **Parameters / inputs:** 
-  * `target` (Personnel): The specific personnel object to update.
-  * `newStatus` (Status): The new medical status (e.g., `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, or `PENDING`).
+### `Model.setPersonnelStatus(int oneBasedIndex, Status newStatus)`
+* **Description:** Updates the medical readiness status of a personnel record at the given index without modifying
+any other fields. Valid statuses include `FIT`, `LIGHT_DUTY`, `MC`, `CASUALTY`, or `PENDING`.
+* **Parameters / inputs:**
+  * `oneBasedIndex` (int): The 1-based index of the personnel record.
+  * `newStatus` (Status): The new medical status.
 * **Return values:** `void`
-* **Example usage:** 
+* **Exceptions:** Throws `CommandException` if the index is out of bounds.
+* **Example usage:**
 ```java
-model.setPersonnelStatus(johnDoe, Status.LIGHT_DUTY);
+model.setPersonnelStatus(1, Status.LIGHT_DUTY);
 ```
 
 ### `Model.getFilteredPersonnelList(Status statusFilter)`
-* **Description:** Retrieves the list of personnel based on the provided status filter. Passing `null` returns 
-the entire unfiltered roster. The UI may further filter this list based on the active session role 
+* **Description:** Retrieves the list of personnel based on the provided status filter. Passing `null` returns
+the entire unfiltered roster. The UI may further filter this list based on the active session role
 (e.g., Field Medics only seeing `FIT` and `CASUALTY`).
 * **Parameters / inputs:** `statusFilter` (Status): The specific status to filter by, or `null` for all.
-* **Return values:** `List<Personnel>` - The requested personnel list.
-* **Example usage:** 
+* **Return values:** `List<Personnel>` - The requested personnel list (unmodifiable snapshot).
+* **Example usage:**
 ```java
 List<Personnel> allPersonnel = model.getFilteredPersonnelList(null);
 ```
 
-### `Model.generateResupplyReport()`
-* **Description:** Analyzes the inventory and generates a report flagging items with a quantity below 20 or an expiry 
-within 30 days.
-* **Parameters:** None.
-* **Return values:** `List<ReportItem>` - A structured list containing the flagged items and the reason 
-they were flagged.
-* **Example usage:** 
+### `Model.getPersonnelList()`
+* **Description:** Returns the live observable personnel list for direct JavaFX UI binding.
+* **Parameters / inputs:** None.
+* **Return values:** `ObservableList<Personnel>` - A live list that triggers UI updates when modified.
+* **Example usage:**
 ```java
-List<ReportItem> report = model.generateResupplyReport();
+personnelTableView.setItems(model.getPersonnelList());
+```
+
+### `Model.getPersonnelCount()`
+* **Description:** Returns the total number of personnel currently in the roster.
+* **Parameters / inputs:** None.
+* **Return values:** `int` - The personnel count.
+* **Example usage:**
+```java
+int total = model.getPersonnelCount();
+```
+
+### `Model.getDutySlots()`
+* **Description:** Returns an unmodifiable snapshot of all scheduled duty slots.
+* **Parameters / inputs:** None.
+* **Return values:** `List<DutySlot>` - All duty slots currently in the schedule.
+* **Example usage:**
+```java
+List<DutySlot> slots = model.getDutySlots();
+```
+
+### `Model.addDutySlot(DutySlot slot)`
+* **Description:** Appends a new duty slot to the schedule.
+* **Parameters / inputs:**
+  * `slot` (DutySlot): A duty slot specifying date, start/end time, duty type, and assigned personnel name.
+* **Return values:** `void`
+* **Example usage:**
+```java
+model.addDutySlot(new DutySlot(LocalDate.now(), LocalTime.of(8,0), LocalTime.of(12,0),
+    DutyType.GUARD_DUTY, "John Doe"));
+```
+
+### `Model.removeDutySlot(int zeroBasedIndex)`
+* **Description:** Removes the duty slot at the given zero-based index.
+* **Parameters / inputs:**
+  * `zeroBasedIndex` (int): The 0-based index of the duty slot.
+* **Return values:** `void`
+* **Exceptions:** Throws `CommandException` if the index is out of bounds.
+* **Example usage:**
+```java
+model.removeDutySlot(0);
+```
+
+### `Model.clearDutySlots()`
+* **Description:** Removes all duty slots from the schedule.
+* **Parameters / inputs:** None.
+* **Return values:** `void`
+
+### `Model.clearDutySlotsForDate(LocalDate date)`
+* **Description:** Removes all duty slots scheduled on the given date.
+* **Parameters / inputs:**
+  * `date` (LocalDate): The date whose slots should be cleared.
+* **Return values:** `void`
+* **Example usage:**
+```java
+model.clearDutySlotsForDate(LocalDate.of(2026, 3, 29));
+```
+
+### `Model.replaceDutySlot(int zeroBasedIndex, DutySlot newSlot)`
+* **Description:** Replaces the duty slot at the given index with a new slot.
+* **Parameters / inputs:**
+  * `zeroBasedIndex` (int): The 0-based index of the slot to replace.
+  * `newSlot` (DutySlot): The replacement duty slot.
+* **Return values:** `void`
+* **Exceptions:** Throws `CommandException` if the index is out of bounds.
+* **Example usage:**
+```java
+model.replaceDutySlot(0, updatedSlot);
 ```
 
 ---

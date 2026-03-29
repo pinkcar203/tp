@@ -1,7 +1,7 @@
 package meditrack.model;
 
 /**
- * Represents the current user session in the application.
+ * Holds who is logged in (role only).
  */
 public class Session {
     private static Session instance;
@@ -11,9 +11,8 @@ public class Session {
     }
 
     /**
-     * Retrieves the single instance of the Session.
+     * Lazy singleton — call this instead of new Session().
      */
-    /** Returns the singleton session object. */
     public static Session getInstance() {
         if (instance == null) {
             instance = new Session();
@@ -21,17 +20,17 @@ public class Session {
         return instance;
     }
 
-    /** Sets the role for the logged-in user. */
+    /** Called after a successful login. */
     public void setRole(Role role) {
         this.currentRole = role;
     }
 
-    /** Returns the current role, or null if not logged in. */
+    /** Null if nobody is logged in yet. */
     public Role getRole() {
         return currentRole;
     }
 
-    /** Clears the session (e.g. on logout). */
+    /** Logout / reset session. */
     public void clear() {
         this.currentRole = null;
     }

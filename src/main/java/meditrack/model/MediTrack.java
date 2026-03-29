@@ -11,8 +11,6 @@ import meditrack.model.exceptions.DuplicateSupplyException;
 
 /**
  * Root data container that holds both the supply and personnel lists.
- * The public getters return unmodifiable lists so nothing outside can
- * accidentally mess with the data directly.
  */
 public class MediTrack implements ReadOnlyMediTrack {
 
@@ -21,16 +19,15 @@ public class MediTrack implements ReadOnlyMediTrack {
     private final List<DutySlot> dutySlots = new ArrayList<>();
 
     /**
-     * Appends a {@link Personnel} record directly to the internal list.
-     * Used by {@code StorageManager} when loading data from disk.
-     * No duplicate check is performed here — callers are responsible for validation.
+     * Appends a Personnel record directly to the internal list.
+     * Used by StorageManager when loading data from disk.
      */
     public void addPersonnelRecord(Personnel p) {
         personnel.add(p);
     }
 
     /**
-     * Returns the live mutable personnel list (same package only; used by {@link ModelManager}).
+     * Returns the live mutable personnel list.
      */
     ObservableList<Personnel> getPersonnelObservable() {
         return personnel;
@@ -48,12 +45,12 @@ public class MediTrack implements ReadOnlyMediTrack {
         return FXCollections.unmodifiableObservableList(personnel);
     }
 
-    /** Checks for duplicate supply name (case-insensitive). */
+    /** Checks for duplicate supply name. */
     public boolean hasSupply(Supply supply) {
         return supplies.stream().anyMatch(s -> s.equals(supply));
     }
 
-    /** Adds a supply; throws if the name already exists (case-insensitive). */
+    /** Adds a supply; throws DuplicateSupplyException if the name already exists. */
     public void addSupply(Supply supply) {
         if (hasSupply(supply)) {
             throw new DuplicateSupplyException();
@@ -61,27 +58,31 @@ public class MediTrack implements ReadOnlyMediTrack {
         supplies.add(supply);
     }
 
-    /** Replaces the supply at {@code index}. */
+    /** Replaces the supply at the given index. */
     public void setSupply(int index, Supply editedSupply) {
         supplies.set(index, editedSupply);
     }
 
-    /** Removes and returns the supply at {@code index}. */
+    /** Removes and returns the supply at the given index. */
     public Supply removeSupply(int index) {
         return supplies.remove(index);
     }
 
-    /** Returns the internal modifiable list — only ModelManager should call this. */
+    /**
+     * Returns the internal mutable list.
+     */
     public ObservableList<Supply> getInternalSupplyList() {
         return supplies;
     }
 
-    /** Appends a supply without duplicate check — used by StorageManager when loading from disk. */
+    /**
+     * Appends a supply.
+     */
     public void addSupplyRecord(Supply s) {
         supplies.add(s);
     }
 
-    // ── Duty slots ────────────────────────────────────────────────────────────
+    // Duty slots
 
     /** Unmodifiable view of scheduled duty slots. */
     @Override
@@ -89,12 +90,14 @@ public class MediTrack implements ReadOnlyMediTrack {
         return Collections.unmodifiableList(dutySlots);
     }
 
-    /** Internal mutable list — only ModelManager should call this. */
+    /** Internal mutable list. */
     List<DutySlot> getDutySlotsInternal() {
         return dutySlots;
     }
 
-    /** Appends a duty slot record — used by StorageManager when loading from disk. */
+    /**
+     * Appends a duty slot record.
+     */
     public void addDutySlotRecord(DutySlot slot) {
         dutySlots.add(slot);
     }

@@ -20,7 +20,7 @@ public class Parser {
     }
 
     /**
-     * Validates {@code fields} for {@code commandType}.
+     * Validates fields for commandType.
      *
      * @throws ParseException if any rule fails
      */

@@ -10,16 +10,15 @@ import meditrack.model.Role;
 import meditrack.storage.Storage;
 
 /**
- * The main LogicManager of the app.
- * It handles the execution of commands, enforces role-based access, and triggers storage saves.
+ * Runs commands, checks the user's role, then saves to storage.
  */
 public class LogicManager implements Logic {
     private final Model model;
     private final Storage storage;
 
     /**
-     * @param model in-memory state
-     * @param storage persistence layer
+     * @param model model
+     * @param storage storage layer
      */
     public LogicManager(Model model, Storage storage) {
         this.model = model;

@@ -157,6 +157,8 @@ Each **Personnel** record includes:
 
 - Name (unique, case-insensitive)
 - Medical readiness status
+- Blood group (A+, A−, B+, B−, AB+, AB−, O+, O−, or Unknown)
+- Allergies (free-text field)
 
 Personnel status values:
 

@@ -1,5 +1,6 @@
 package meditrack.storage;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 
@@ -10,50 +11,40 @@ import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.DutySlot;
 import meditrack.model.DutyType;
 
-/**
- * Jackson-friendly version of a {@link DutySlot} record.
- *
- * <p>JSON format:
- * <pre>
- * {
- *   "startTime": "08:00",
- *   "endTime":   "10:00",
- *   "dutyType":  "GUARD_DUTY",
- *   "personnelName": "Jack"
- * }
- * </pre>
- */
+/** One duty slot line in JSON. */
 public class JsonAdaptedDutySlot {
 
     public static final String MISSING_FIELD_MSG = "DutySlot's %s field is missing.";
 
+    public final String date;
     public final String startTime;
     public final String endTime;
     public final String dutyType;
     public final String personnelName;
 
-    /** Jackson deserialisation constructor. */
     @JsonCreator
-    public JsonAdaptedDutySlot(@JsonProperty("startTime") String startTime,
+    public JsonAdaptedDutySlot(@JsonProperty("date") String date,
+                                @JsonProperty("startTime") String startTime,
                                 @JsonProperty("endTime") String endTime,
                                 @JsonProperty("dutyType") String dutyType,
                                 @JsonProperty("personnelName") String personnelName) {
+        this.date = date;
         this.startTime = startTime;
         this.endTime = endTime;
         this.dutyType = dutyType;
         this.personnelName = personnelName;
     }
 
-    /** Converts a domain {@link DutySlot} to its JSON-friendly form. */
     public static JsonAdaptedDutySlot fromModelType(DutySlot source) {
         return new JsonAdaptedDutySlot(
+                source.getDate().toString(),
                 source.getStartTime().toString(),
                 source.getEndTime().toString(),
                 source.getDutyType().name(),
                 source.getPersonnelName());
     }
 
-    /** Converts this DTO back to a domain {@link DutySlot}. */
+    /** Converts this DTO back to a domain DutySlot. */
     public DutySlot toModelType() throws CommandException {
         if (startTime == null || startTime.isBlank()) {
             throw new CommandException(String.format(MISSING_FIELD_MSG, "startTime"));
@@ -66,6 +57,15 @@ public class JsonAdaptedDutySlot {
         }
         if (personnelName == null || personnelName.isBlank()) {
             throw new CommandException(String.format(MISSING_FIELD_MSG, "personnelName"));
+        }
+
+        LocalDate slotDate = LocalDate.now();
+        if (date != null && !date.isBlank()) {
+            try {
+                slotDate = LocalDate.parse(date);
+            } catch (DateTimeParseException e) {
+                throw new CommandException("Invalid date format in duty slot: expected YYYY-MM-DD.");
+            }
         }
 
         LocalTime start;
@@ -84,6 +84,6 @@ public class JsonAdaptedDutySlot {
             throw new CommandException("Invalid duty type in data file: \"" + dutyType + "\"");
         }
 
-        return new DutySlot(start, end, type, personnelName);
+        return new DutySlot(slotDate, start, end, type, personnelName);
     }
 }

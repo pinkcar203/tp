@@ -20,8 +20,7 @@ public enum Role {
     }
 
     /**
-     * Overrides the default enum string (e.g., "MEDICAL_OFFICER")
-     * to return the clean, readable display name for JavaFX components.
+     * Overrides the default enum string 
      */
     @Override
     public String toString() {

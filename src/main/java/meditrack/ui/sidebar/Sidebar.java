@@ -4,29 +4,20 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Separator;
 import javafx.scene.layout.*;
 import meditrack.model.Role;
 import meditrack.model.Session;
 import java.util.function.Consumer;
 
 /**
- * Sidebar navigation component.
- *
- * <p>Navigation items are dynamically generated based on the user's {@link Role}:
- * <ul>
- *   <li><b>FIELD_MEDIC</b> — Inventory, Expiring Soon, Personnel (Read-Only)</li>
- *   <li><b>MEDICAL_OFFICER</b> — Personnel, FIT Personnel, Duty Roster</li>
- *   <li><b>LOGISTICS_OFFICER</b> — Supply Levels, Resupply Report</li>
- * </ul>
- * * <p>Also provides global utilities such as CSV data export and user logout.
+ * Sidebar navigation component 
  */
 public class Sidebar extends VBox {
 
     /** Identifies which screen to display in the content area. */
     public enum Screen {
+        DASHBOARD,
         PERSONNEL,
-        FIT_PERSONNEL,
         MEDICAL_ATTENTION,
         DUTY_ROSTER,
         INVENTORY,
@@ -35,18 +26,19 @@ public class Sidebar extends VBox {
         RESUPPLY_REPORT
     }
 
+    private static final String BG          = "#121410";
+    private static final String OLIVE       = "#556b2f";
+    private static final String OLIVE_LIGHT = "#8aa65c";
+    private static final String ACTIVE_BG   = "#292b26";
+    private static final String BORDER      = "#2a2d24";
+    private static final String TEXT_DIM    = "#8f9284";
+    private static final String TEXT_MUTED  = "#45483c";
+
     private final Consumer<Screen> navigationHandler;
     private final Runnable logoutHandler;
     private final Runnable exportHandler;
     private Button activeButton;
 
-    /**
-     * Constructs the Sidebar navigation menu.
-     *
-     * @param navigationHandler A callback function that receives the selected {@link Screen} to navigate to.
-     * @param logoutHandler     A callback function executed when the user clicks the Logout button.
-     * @param exportHandler     A callback function executed when the user clicks the Export to CSV button.
-     */
     public Sidebar(Consumer<Screen> navigationHandler, Runnable logoutHandler, Runnable exportHandler) {
         this.navigationHandler = navigationHandler;
         this.logoutHandler = logoutHandler;
@@ -54,94 +46,132 @@ public class Sidebar extends VBox {
         buildUi();
     }
 
-    /**
-     * Initializes and arranges all JavaFX components within the sidebar.
-     * Dynamically loads navigation buttons based on the active user's role.
-     */
     private void buildUi() {
         setPrefWidth(200);
         setMinWidth(180);
-        setSpacing(4);
-        setPadding(new Insets(16, 8, 16, 8));
-        setStyle("-fx-background-color: #1c2b3a;");
+        setSpacing(2);
+        setPadding(new Insets(0));
+        setStyle("-fx-background-color: " + BG + "; -fx-border-color: " + BORDER
+                + "; -fx-border-width: 0 1 0 0;");
 
-        Label brand = new Label("MediTrack");
-        brand.setStyle("-fx-text-fill: white; -fx-font-size: 17px; "
-                + "-fx-font-weight: bold; -fx-padding: 0 0 10 8;");
+        // Brand header
+        VBox header = new VBox(4);
+        header.setPadding(new Insets(14, 12, 12, 12));
+        header.setStyle("-fx-background-color: " + BG + "; -fx-border-color: " + BORDER
+                + "; -fx-border-width: 0 0 1 0;");
+
+        Label brand = new Label("MEDITRACK");
+        brand.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold;"
+                + " -fx-font-family: 'Consolas', monospace; -fx-letter-spacing: 0.15em;");
 
         Role role = Session.getInstance().getRole();
         String roleText = switch (role) {
-            case MEDICAL_OFFICER  -> "Medical Officer";
-            case PLATOON_COMMANDER -> "Platoon Commander";
-            case FIELD_MEDIC      -> "Field Medic";
-            case LOGISTICS_OFFICER -> "Logistics Officer";
+            case MEDICAL_OFFICER   -> "MEDICAL OFFICER";
+            case PLATOON_COMMANDER -> "PLATOON COMMANDER";
+            case FIELD_MEDIC       -> "FIELD MEDIC";
+            case LOGISTICS_OFFICER -> "LOGISTICS OFFICER";
         };
         Label roleBadge = new Label(roleText);
         roleBadge.setMaxWidth(Double.MAX_VALUE);
-        roleBadge.setStyle("-fx-background-color: #2e4057; -fx-text-fill: #a0b8cc; "
-                + "-fx-font-size: 11px; -fx-padding: 4 8 4 8; -fx-background-radius: 4;");
+        roleBadge.setPadding(new Insets(3, 6, 3, 6));
+        roleBadge.setStyle("-fx-background-color: " + OLIVE + "; -fx-text-fill: white;"
+                + " -fx-font-size: 9px; -fx-font-weight: bold;"
+                + " -fx-font-family: 'Consolas', monospace;");
 
-        getChildren().addAll(brand, roleBadge, new Separator());
+        header.getChildren().addAll(brand, roleBadge);
+        getChildren().add(header);
 
-        Button firstBtn = null;
+        // Nav section label
+        Label navLabel = new Label("NAVIGATION");
+        navLabel.setPadding(new Insets(12, 12, 4, 12));
+        navLabel.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 8px; -fx-font-weight: bold;"
+                + " -fx-font-family: 'Consolas', monospace;");
+        getChildren().add(navLabel);
 
+        // Dashboard (all roles)
+        Button dashBtn = navButton("DASHBOARD", Screen.DASHBOARD);
+        getChildren().add(dashBtn);
+
+        // Role-specific nav
         if (role == Role.FIELD_MEDIC) {
-            firstBtn = navButton("Inventory", Screen.INVENTORY);
-            getChildren().add(firstBtn);
-            getChildren().add(navButton("Personnel", Screen.PERSONNEL));
+            getChildren().add(navButton("INVENTORY", Screen.INVENTORY));
+            getChildren().add(navButton("EXPIRING SOON", Screen.EXPIRING_SOON));
+            getChildren().add(navButton("PERSONNEL", Screen.PERSONNEL));
         } else if (role == Role.MEDICAL_OFFICER) {
-            firstBtn = navButton("Personnel", Screen.PERSONNEL);
-            getChildren().add(firstBtn);
-            getChildren().add(navButton("Medical Attention", Screen.MEDICAL_ATTENTION));
+            getChildren().add(navButton("PERSONNEL", Screen.PERSONNEL));
+            getChildren().add(navButton("MEDICAL ATTENTION", Screen.MEDICAL_ATTENTION));
         } else if (role == Role.PLATOON_COMMANDER) {
-            firstBtn = navButton("Personnel", Screen.PERSONNEL);
-            getChildren().add(firstBtn);
-            getChildren().add(navButton("FIT Personnel", Screen.FIT_PERSONNEL));
-            getChildren().add(navButton("Duty Roster", Screen.DUTY_ROSTER));
+            getChildren().add(navButton("PERSONNEL", Screen.PERSONNEL));
+            getChildren().add(navButton("DUTY ROSTER", Screen.DUTY_ROSTER));
         } else if (role == Role.LOGISTICS_OFFICER) {
-            firstBtn = navButton("Inventory", Screen.INVENTORY);
-            getChildren().add(firstBtn);
-            getChildren().add(navButton("Resupply Report", Screen.RESUPPLY_REPORT));
+            getChildren().add(navButton("SUPPLY LEVELS", Screen.SUPPLY_LEVELS));
+            getChildren().add(navButton("RESUPPLY REPORT", Screen.RESUPPLY_REPORT));
         }
 
-        Button exportBtn = new Button("Export to CSV");
-        exportBtn.setMaxWidth(Double.MAX_VALUE);
-        exportBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #198754; "
-                + "-fx-font-size: 13px; -fx-padding: 9 12 9 12; -fx-cursor: hand; "
-                + "-fx-background-radius: 6; -fx-alignment: CENTER_LEFT;");
-        exportBtn.setOnAction(e -> exportHandler.run());
+        // Utilities section
+        Label utilLabel = new Label("UTILITIES");
+        utilLabel.setPadding(new Insets(16, 12, 4, 12));
+        utilLabel.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 8px; -fx-font-weight: bold;"
+                + " -fx-font-family: 'Consolas', monospace;");
+        getChildren().add(utilLabel);
 
-        getChildren().addAll(new Separator(), exportBtn);
+        Button exportBtn = new Button("EXPORT CSV");
+        exportBtn.setMaxWidth(Double.MAX_VALUE);
+        exportBtn.setAlignment(Pos.CENTER_LEFT);
+        exportBtn.setPadding(new Insets(8, 12, 8, 12));
+        exportBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + OLIVE_LIGHT + ";"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;");
+        exportBtn.setOnMouseEntered(e -> exportBtn.setStyle(
+                "-fx-background-color: " + ACTIVE_BG + "; -fx-text-fill: " + OLIVE_LIGHT + ";"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;"));
+        exportBtn.setOnMouseExited(e -> exportBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: " + OLIVE_LIGHT + ";"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;"));
+        exportBtn.setOnAction(e -> exportHandler.run());
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        Button logoutBtn = new Button("Logout");
+        // Bottom border separator
+        Region bottomBorder = new Region();
+        bottomBorder.setPrefHeight(1);
+        bottomBorder.setMaxWidth(Double.MAX_VALUE);
+        bottomBorder.setStyle("-fx-background-color: " + BORDER + ";");
+
+        Button logoutBtn = new Button("LOGOUT");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
-        logoutBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #e07070; "
-                + "-fx-font-size: 13px; -fx-padding: 9 12 9 12; -fx-cursor: hand; "
-                + "-fx-background-radius: 6; -fx-alignment: CENTER_LEFT;");
+        logoutBtn.setAlignment(Pos.CENTER_LEFT);
+        logoutBtn.setPadding(new Insets(10, 12, 10, 12));
+        logoutBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #e07070;"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;");
+        logoutBtn.setOnMouseEntered(e -> logoutBtn.setStyle(
+                "-fx-background-color: #2a1515; -fx-text-fill: #e07070;"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;"));
+        logoutBtn.setOnMouseExited(e -> logoutBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #e07070;"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-border-color: transparent; -fx-background-radius: 0;"));
         logoutBtn.setOnAction(e -> logoutHandler.run());
 
-        getChildren().addAll(spacer, new Separator(), logoutBtn);
+        getChildren().addAll(exportBtn, spacer, bottomBorder, logoutBtn);
 
-        if (firstBtn != null) {
-            activateButton(firstBtn);
-        }
+        // Default Dashboard active
+        activateButton(dashBtn);
     }
 
-    /**
-     * Creates a standardized navigation button for the sidebar.
-     *
-     * @param label  The text displayed on the button.
-     * @param target The screen to navigate to when clicked.
-     * @return A styled JavaFX {@link Button}.
-     */
     private Button navButton(String label, Screen target) {
         Button btn = new Button(label);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(8, 12, 8, 12));
         btn.setStyle(inactiveStyle());
+        btn.setOnMouseEntered(e -> { if (btn != activeButton) btn.setStyle(hoverStyle()); });
+        btn.setOnMouseExited(e -> { if (btn != activeButton) btn.setStyle(inactiveStyle()); });
         btn.setOnAction(e -> {
             activateButton(btn);
             navigationHandler.accept(target);
@@ -149,11 +179,6 @@ public class Sidebar extends VBox {
         return btn;
     }
 
-    /**
-     * Updates the visual styling to reflect the currently active navigation button.
-     *
-     * @param btn The button that was just clicked and should become active.
-     */
     private void activateButton(Button btn) {
         if (activeButton != null) {
             activeButton.setStyle(inactiveStyle());
@@ -162,25 +187,24 @@ public class Sidebar extends VBox {
         activeButton = btn;
     }
 
-    /**
-     * Provides the CSS styling string for unselected navigation buttons.
-     *
-     * @return A string containing inline JavaFX CSS rules.
-     */
     private String inactiveStyle() {
-        return "-fx-background-color: transparent; -fx-text-fill: #c5d5e4; "
-                + "-fx-font-size: 13px; -fx-padding: 9 12 9 12; -fx-cursor: hand; "
-                + "-fx-background-radius: 6; -fx-alignment: CENTER_LEFT;";
+        return "-fx-background-color: transparent; -fx-text-fill: " + TEXT_DIM + ";"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-background-radius: 0;"
+                + " -fx-border-color: transparent; -fx-border-width: 0 0 0 2;";
     }
 
-    /**
-     * Provides the CSS styling string for the currently selected navigation button.
-     *
-     * @return A string containing inline JavaFX CSS rules.
-     */
+    private String hoverStyle() {
+        return "-fx-background-color: " + ACTIVE_BG + "; -fx-text-fill: white;"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-background-radius: 0;"
+                + " -fx-border-color: transparent; -fx-border-width: 0 0 0 2;";
+    }
+
     private String activeStyle() {
-        return "-fx-background-color: #0d6efd; -fx-text-fill: white; "
-                + "-fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 9 12 9 12; "
-                + "-fx-cursor: hand; -fx-background-radius: 6; -fx-alignment: CENTER_LEFT;";
+        return "-fx-background-color: " + ACTIVE_BG + "; -fx-text-fill: white; -fx-font-weight: bold;"
+                + " -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-background-radius: 0;"
+                + " -fx-border-color: " + OLIVE_LIGHT + "; -fx-border-width: 0 0 0 2;";
     }
 }

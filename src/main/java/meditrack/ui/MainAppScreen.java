@@ -1,16 +1,22 @@
 package meditrack.ui;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.*;
 import meditrack.logic.Logic;
+import meditrack.storage.CsvExportUtility;
 import meditrack.logic.LogicManager;
 import meditrack.model.MediTrack;
 import meditrack.model.ModelManager;
 import meditrack.model.Role;
 import meditrack.model.Session;
 import meditrack.storage.StorageManager;
+import meditrack.ui.screen.DashboardScreen;
 import meditrack.ui.screen.DutyRosterScreen;
 import meditrack.ui.screen.ExpiringSoonScreen;
-import meditrack.ui.screen.FitPersonnelScreen;
 import meditrack.ui.screen.MedicalAttentionScreen;
 import meditrack.ui.screen.InventoryScreen;
 import meditrack.ui.screen.PersonnelScreen;
@@ -36,8 +42,8 @@ public class MainAppScreen extends HBox {
     private final Logic logic;
     private final StackPane contentArea = new StackPane();
 
+    private DashboardScreen dashboardScreen;
     private PersonnelScreen personnelScreen;
-    private FitPersonnelScreen fitPersonnelScreen;
     private DutyRosterScreen dutyRosterScreen;
     private MedicalAttentionScreen medicalAttentionScreen;
     private InventoryScreen inventoryScreen;
@@ -62,16 +68,11 @@ public class MainAppScreen extends HBox {
         }, this::handleExport);
 
         HBox.setHgrow(contentArea, Priority.ALWAYS);
-        contentArea.setStyle("-fx-background-color: #f0f2f5; -fx-padding: 16;");
+        contentArea.setStyle("-fx-background-color: #0d0f0b;");
 
         getChildren().addAll(sidebar, contentArea);
 
-        Role currentRole = Session.getInstance().getRole();
-        if (currentRole == Role.FIELD_MEDIC || currentRole == Role.LOGISTICS_OFFICER) {
-            showScreen(Screen.INVENTORY);
-        } else {
-            showScreen(Screen.PERSONNEL);
-        }
+        showScreen(Screen.DASHBOARD);
     }
 
     /**
@@ -81,19 +82,19 @@ public class MainAppScreen extends HBox {
     public void showScreen(Screen screen) {
         contentArea.getChildren().clear();
         switch (screen) {
+            case DASHBOARD:
+                if (dashboardScreen == null) {
+                    dashboardScreen = new DashboardScreen(model);
+                }
+                dashboardScreen.refresh();
+                contentArea.getChildren().add(dashboardScreen);
+                break;
             case PERSONNEL:
                 if (personnelScreen == null) {
                     personnelScreen = new PersonnelScreen(model, storage);
                 }
                 personnelScreen.refresh();
                 contentArea.getChildren().add(personnelScreen);
-                break;
-            case FIT_PERSONNEL:
-                if (fitPersonnelScreen == null) {
-                    fitPersonnelScreen = new FitPersonnelScreen(model);
-                }
-                fitPersonnelScreen.refresh();
-                contentArea.getChildren().add(fitPersonnelScreen);
                 break;
             case DUTY_ROSTER:
                 if (dutyRosterScreen == null) {
@@ -119,6 +120,7 @@ public class MainAppScreen extends HBox {
                 if (expiringSoonScreen == null) {
                     expiringSoonScreen = new ExpiringSoonScreen(model);
                 }
+                expiringSoonScreen.refresh();
                 contentArea.getChildren().add(expiringSoonScreen);
                 break;
             case SUPPLY_LEVELS:
@@ -144,16 +146,17 @@ public class MainAppScreen extends HBox {
         try {
             Role currentRole = Session.getInstance().getRole();
 
-            java.nio.file.Path savedPath = meditrack.storage.CsvExportUtility.exportData(model.getMediTrack(), currentRole);
+            Path savedPath = CsvExportUtility.exportData(model.getMediTrack(), currentRole);
 
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            Alert alert = new Alert(AlertType.INFORMATION);
             alert.setTitle("Export Successful");
             alert.setHeaderText(null);
-            alert.setContentText("Security Clearance: " + currentRole.toString() + "\nData successfully exported to:\n" + savedPath.toAbsolutePath());
+            alert.setContentText("Security Clearance: " + currentRole.toString()
+                    + "\nData successfully exported to:\n" + savedPath.toAbsolutePath());
             alert.showAndWait();
 
-        } catch (java.io.IOException e) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+        } catch (IOException e) {
+            Alert alert = new Alert(AlertType.ERROR);
             alert.setTitle("Export Failed");
             alert.setHeaderText(null);
             alert.setContentText("Could not export data: " + e.getMessage());

@@ -11,7 +11,6 @@ import meditrack.model.exceptions.InvalidIndexException;
 
 /**
  * Replaces the supply at the given index with the edited version.
- * Only the Field Medic role can run this command.
  */
 public class EditSupplyCommand extends Command {
 
@@ -22,7 +21,7 @@ public class EditSupplyCommand extends Command {
     private final Supply editedSupply;
 
     /**
-     * @param targetIndex 1-based index wrapped as {@link Index}
+     * @param targetIndex 1-based index
      * @param editedSupply replacement supply data
      */
     public EditSupplyCommand(Index targetIndex, Supply editedSupply) {

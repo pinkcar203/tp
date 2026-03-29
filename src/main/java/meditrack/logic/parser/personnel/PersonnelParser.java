@@ -7,15 +7,14 @@ import meditrack.model.ModelManager;
 import meditrack.model.Status;
 
 /**
- * Parses raw strings into personnel {@link meditrack.logic.commands.Command}s
- * (used by modals that build prefix-style argument strings).
+ * Parses raw strings into personnel commands
  */
 public class PersonnelParser {
 
     private static final String STATUS_VALID = "FIT, LIGHT_DUTY, MC, CASUALTY, PENDING";
 
     /**
-     * Expected format: {@code add_personnel n/NAME s/STATUS}
+     * Expected format: add_personnel n/NAME s/STATUS
      *
      * @param args text after the command word
      * @return command ready to execute
@@ -34,7 +33,7 @@ public class PersonnelParser {
     }
 
     /**
-     * Expected format: {@code remove_personnel INDEX}
+     * Expected format: remove_personnel INDEX
      *
      * @param args text after the command word
      * @return command ready to execute
@@ -47,7 +46,7 @@ public class PersonnelParser {
     }
 
     /**
-     * Expected format: {@code update_status INDEX s/STATUS}
+     * Expected format: update_status INDEX s/STATUS
      */
     public static UpdateStatusCommand parseUpdateStatus(String args) throws ParseException {
         String[] parts = args.trim().split("\\s+", 2);
@@ -65,16 +64,7 @@ public class PersonnelParser {
     }
 
     /**
-     * No arguments; FIT list is validated when the command runs.
-     *
-     * @return command ready to execute
-     */
-    public static GenerateRosterCommand parseGenerateRoster() {
-        return new GenerateRosterCommand();
-    }
-
-    /**
-     * Returns the value after {@code prefix}, or {@code null} if missing.
+     * Returns the value after prefix, or null if missing.
      */
     private static String extractPrefixValue(String args, String prefix) {
         if (args == null) {

@@ -10,7 +10,7 @@ import meditrack.model.Status;
 import meditrack.model.Session;
 import java.util.List;
 
-/** Changes someone's status. Index is 1-based like the UI table. */
+/** Changes someone's status. */
 public class UpdateStatusCommand extends Command {
 
     public static final String COMMAND_WORD = "update_status";
@@ -21,15 +21,15 @@ public class UpdateStatusCommand extends Command {
     private final Status newStatus;
 
     /**
-     * @param oneBasedIndex 1-based index as displayed in the UI list
-     * @param newStatus     pre-validated new status
+     * @param oneBasedIndex 1-based index
+     * @param newStatus     new status
      */
     public UpdateStatusCommand(int oneBasedIndex, Status newStatus) {
         this.oneBasedIndex = oneBasedIndex;
         this.newStatus = newStatus;
     }
 
-    /** Updates the person's status in the model. */
+    /** Updates the person's status. */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         Role currentRole = Session.getInstance().getRole();
@@ -51,12 +51,12 @@ public class UpdateStatusCommand extends Command {
         return List.of(Role.MEDICAL_OFFICER, Role.FIELD_MEDIC);
     }
 
-    /** Returns the 1-based index for this command. */
+    /** Returns the 1-based index. */
     public int getOneBasedIndex() {
         return oneBasedIndex;
-    }
+    }   
 
-    /** Returns the new status for this command. */
+    /** Returns the new status. */
     public Status getNewStatus() {
         return newStatus;
     }

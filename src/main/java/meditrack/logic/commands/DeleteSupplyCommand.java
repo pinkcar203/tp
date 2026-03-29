@@ -20,7 +20,7 @@ public class DeleteSupplyCommand extends Command {
 
     private final Index targetIndex;
 
-    /** @param targetIndex index of the row to delete (from UI) */
+    /** @param targetIndex index of the row to delete */
     public DeleteSupplyCommand(Index targetIndex) {
         this.targetIndex = Objects.requireNonNull(targetIndex);
     }

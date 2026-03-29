@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ class SupplyCommandsTest {
         EditSupplyCommand cmd = new EditSupplyCommand(
                 Index.fromOneBased(1),
                 new Supply("Test", 10, LocalDate.of(2027, 1, 1)));
-        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());
+        assertEquals(List.of(Role.FIELD_MEDIC), cmd.getRequiredRoles());
     }
 
     // Delete Supply Command Tests
@@ -99,7 +100,7 @@ class SupplyCommandsTest {
     @Test
     void deleteSupplyCommand_requiredRole_isFieldMedic() {
         DeleteSupplyCommand cmd = new DeleteSupplyCommand(Index.fromOneBased(1));
-        assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());
+        assertEquals(List.of(Role.FIELD_MEDIC), cmd.getRequiredRoles());
     }
 
     @Test
@@ -156,6 +157,6 @@ class SupplyCommandsTest {
     @Test
     void generateResupplyReport_requiredRole_isLogisticsOfficer() {
         GenerateResupplyReportCommand cmd = new GenerateResupplyReportCommand(20, 30);
-        assertEquals(Role.LOGISTICS_OFFICER, cmd.getRequiredRoles());
+        assertEquals(List.of(Role.LOGISTICS_OFFICER), cmd.getRequiredRoles());
     }
 }

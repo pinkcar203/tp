@@ -13,30 +13,29 @@ import meditrack.commons.core.Index;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.exceptions.InvalidIndexException;
 
-/** In-memory model: supplies + personnel + current session. */
+/** In-memory model. */
 public class ModelManager implements Model {
 
     private static final String MSG_DUPLICATE =
             "A personnel member named \"%s\" already exists.";
     private static final String MSG_OUT_OF_BOUNDS =
             "Index %d is out of bounds. The list currently has %d member(s).";
-    private static final String MSG_NO_FIT =
-            "Cannot generate roster: no personnel with status FIT currently exist.";
-
+    private static final String MSG_SLOT_OUT_OF_BOUNDS =
+            "Slot index %d is out of bounds. The roster currently has %d slot(s).";
     private final MediTrack mediTrack;
     private final Session session;
 
     /**
-     * Creates a manager backed by the given {@link MediTrack}.
+     * Creates a manager backed by the given MediTrack.
      *
-     * @param mediTrack data loaded from storage or empty for a new session
+     * @param mediTrack data
      */
     public ModelManager(MediTrack mediTrack) {
         this.mediTrack = mediTrack;
         this.session = Session.getInstance();
     }
 
-    /** Creates a manager with an empty {@link MediTrack}. */
+    /** Creates a manager with an empty MediTrack. */
     public ModelManager() {
         this(new MediTrack());
     }
@@ -53,13 +52,13 @@ public class ModelManager implements Model {
         session.setRole(role);
     }
 
-    /** Adds a supply; duplicate names are rejected in the backing list. */
+    /** Adds a supply; duplicate names are rejected. */
     @Override
     public void addSupply(Supply supply) {
         mediTrack.addSupply(supply);
     }
 
-    /** Replaces the supply at {@code targetIndex}. */
+    /** Replaces the supply at index. */
     @Override
     public void editSupply(Index targetIndex, Supply editedSupply) {
         int zeroIndex = targetIndex.getZeroBased();
@@ -70,7 +69,7 @@ public class ModelManager implements Model {
         mediTrack.setSupply(zeroIndex, editedSupply);
     }
 
-    /** Deletes and returns the supply at {@code targetIndex}. */
+    /** Deletes and returns the supply at index. */
     @Override
     public Supply deleteSupply(Index targetIndex) {
         int zeroIndex = targetIndex.getZeroBased();
@@ -87,7 +86,7 @@ public class ModelManager implements Model {
         return mediTrack.getSupplyList();
     }
 
-    /** Supplies expiring within {@code daysThreshold} days, sorted by expiry. */
+    /** Supplies expiring within daysThreshold days, sorted by expiry. */
     @Override
     public List<Supply> getExpiringSupplies(int daysThreshold) {
         LocalDate today = LocalDate.now();
@@ -98,7 +97,7 @@ public class ModelManager implements Model {
                 .collect(Collectors.toList());
     }
 
-    /** Supplies below {@code quantityThreshold} quantity, sorted ascending. */
+    /** Supplies below quantityThreshold quantity, sorted ascending. */
     @Override
     public List<Supply> getLowStockSupplies(int quantityThreshold) {
         return mediTrack.getInternalSupplyList().stream()
@@ -113,7 +112,7 @@ public class ModelManager implements Model {
         return mediTrack;
     }
 
-    /** Observable personnel list for the UI. */
+    /** Observable personnel list. */
     @Override
     public ObservableList<Personnel> getPersonnelList() {
         return mediTrack.getPersonnelList();
@@ -122,7 +121,14 @@ public class ModelManager implements Model {
     /** Adds a person to the roster. */
     @Override
     public void addPersonnel(String name, Status status) throws CommandException {
-        Personnel candidate = new Personnel(name, status);
+        addPersonnel(name, status, null, "");
+    }
+
+    /** Adds a person to the roster with optional blood group and allergies. */
+    @Override
+    public void addPersonnel(String name, Status status, BloodGroup bloodGroup, String allergies)
+            throws CommandException {
+        Personnel candidate = new Personnel(name, status, bloodGroup, allergies);
         for (Personnel existing : getInternalPersonnelList()) {
             if (existing.equals(candidate)) {
                 throw new CommandException(String.format(MSG_DUPLICATE, name));
@@ -131,7 +137,7 @@ public class ModelManager implements Model {
         getInternalPersonnelList().add(candidate);
     }
 
-    /** Removes the person at the given 1-based index. */
+    /** Removes the person at the given index. */
     @Override
     public Personnel deletePersonnel(int oneBasedIndex) throws CommandException {
         List<Personnel> list = getInternalPersonnelList();
@@ -142,7 +148,7 @@ public class ModelManager implements Model {
         return list.remove(oneBasedIndex - 1);
     }
 
-    /** Updates status for the person at the 1-based index. */
+    /** Updates status for the person at the index. */
     @Override
     public void setPersonnelStatus(int oneBasedIndex, Status newStatus) throws CommandException {
         List<Personnel> list = getInternalPersonnelList();
@@ -153,7 +159,7 @@ public class ModelManager implements Model {
         list.get(oneBasedIndex - 1).setStatus(newStatus);
     }
 
-    /** Personnel filtered by status; {@code null} means everyone. */
+    /** Personnel filtered by status; null means everyone. */
     @Override
     public List<Personnel> getFilteredPersonnelList(Status statusFilter) {
         if (statusFilter == null) {
@@ -162,17 +168,6 @@ public class ModelManager implements Model {
         return getInternalPersonnelList().stream()
                 .filter(p -> p.getStatus() == statusFilter)
                 .collect(Collectors.toUnmodifiableList());
-    }
-
-    /** Shuffled list of FIT personnel for duty roster. */
-    @Override
-    public List<Personnel> generateRoster() throws CommandException {
-        List<Personnel> fit = new ArrayList<>(getFilteredPersonnelList(Status.FIT));
-        if (fit.isEmpty()) {
-            throw new CommandException(MSG_NO_FIT);
-        }
-        Collections.shuffle(fit);
-        return fit;
     }
 
     /** Number of people in the roster. */
@@ -185,7 +180,7 @@ public class ModelManager implements Model {
         return mediTrack.getPersonnelObservable();
     }
 
-    // ── Duty slot management ──────────────────────────────────────────────────
+    // Duty slot management
 
     @Override
     public List<DutySlot> getDutySlots() {
@@ -202,8 +197,7 @@ public class ModelManager implements Model {
         List<DutySlot> slots = mediTrack.getDutySlotsInternal();
         if (zeroBasedIndex < 0 || zeroBasedIndex >= slots.size()) {
             throw new CommandException(
-                    String.format("Index %d is out of bounds. The roster has %d slot(s).",
-                            zeroBasedIndex, slots.size()));
+                    String.format(MSG_SLOT_OUT_OF_BOUNDS, zeroBasedIndex, slots.size()));
         }
         slots.remove(zeroBasedIndex);
     }
@@ -214,12 +208,16 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void clearDutySlotsForDate(LocalDate date) {
+        mediTrack.getDutySlotsInternal().removeIf(slot -> slot.getDate().equals(date));
+    }
+
+    @Override
     public void replaceDutySlot(int zeroBasedIndex, DutySlot newSlot) throws CommandException {
         List<DutySlot> slots = mediTrack.getDutySlotsInternal();
         if (zeroBasedIndex < 0 || zeroBasedIndex >= slots.size()) {
             throw new CommandException(
-                    String.format("Index %d is out of bounds. The roster has %d slot(s).",
-                            zeroBasedIndex, slots.size()));
+                    String.format(MSG_SLOT_OUT_OF_BOUNDS, zeroBasedIndex, slots.size()));
         }
         slots.set(zeroBasedIndex, newSlot);
     }

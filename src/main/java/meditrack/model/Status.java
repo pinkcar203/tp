@@ -3,8 +3,7 @@ package meditrack.model;
 /**
  * Represents the medical readiness status of a Personnel member.
  *
- * <p>Valid values match the team's data schema used in
- * {@link meditrack.storage.JsonAdaptedPersonnel}.
+ * Valid values match the team's data schema.
  */
 public enum Status {
     PENDING,        // Newly added by PC, awaiting MO assessment
@@ -15,7 +14,7 @@ public enum Status {
 
     /**
      * Returns true if this status qualifies the person for full deployment.
-     * Only {@code FIT} personnel appear in the duty roster.
+     * Only FIT personnel appear in the duty roster.
      */
     public boolean isDeployable() {
         return this == FIT;
@@ -26,7 +25,7 @@ public enum Status {
      *
      * @param value raw string from user input or JSON storage
      * @return the matching Status
-     * @throws IllegalArgumentException if {@code value} does not match any Status
+     * @throws IllegalArgumentException if value does not match any Status
      */
     public static Status fromString(String value) {
         if (value == null) {
