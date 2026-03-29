@@ -150,7 +150,7 @@ public class DashboardScreen extends VBox {
     private void refreshFieldMedic() {
         List<Supply> supplies = model.getFilteredSupplyList();
         int totalSupplies = supplies.size();
-        int lowStock = model.getLowStockSupplies(10).size();
+        int lowStock = model.getLowStockSupplies(50).size();
         int expiringSoon = model.getExpiringSupplies(30).size();
         int totalPersonnel = model.getPersonnelList().size();
 
@@ -204,16 +204,16 @@ public class DashboardScreen extends VBox {
 
     private void refreshLogisticsOfficer() {
         int total = model.getFilteredSupplyList().size();
-        int lowStock = model.getLowStockSupplies(10).size();
+        int lowStock = model.getLowStockSupplies(50).size();
         int expiringSoon = model.getExpiringSupplies(30).size();
-        int critical = model.getLowStockSupplies(5).size();
+        int critical = model.getLowStockSupplies(10).size();
 
         addStatCard(0, "TOTAL SUPPLIES", String.valueOf(total), OLIVE_PALE, null);
-        addStatCard(1, "LOW STOCK (<10)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT,
+        addStatCard(1, "LOW STOCK (<50)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT,
                 lowStock > 0 ? WARNING : null);
         addStatCard(2, "EXPIRING SOON", String.valueOf(expiringSoon), expiringSoon > 0 ? WARNING : OLIVE_LIGHT,
                 expiringSoon > 0 ? WARNING : null);
-        addStatCard(3, "CRITICAL (<5)", String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT,
+        addStatCard(3, "CRITICAL (<10)", String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT,
                 critical > 0 ? ERROR : null);
 
         buildSupplyAlertActivity();
@@ -268,7 +268,7 @@ public class DashboardScreen extends VBox {
     private void buildSupplyAlertActivity() {
         activityPane.getChildren().add(buildSectionHeader("SUPPLY ALERT SUMMARY", "ITEMS REQUIRING ATTENTION"));
 
-        List<Supply> lowStock = model.getLowStockSupplies(10);
+        List<Supply> lowStock = model.getLowStockSupplies(50);
         List<Supply> expiringSoon = model.getExpiringSupplies(30);
 
         if (lowStock.isEmpty() && expiringSoon.isEmpty()) {
@@ -279,16 +279,26 @@ public class DashboardScreen extends VBox {
         VBox listBox = new VBox(1);
         listBox.setStyle("-fx-background-color: " + BORDER + ";");
 
+        java.util.List<Supply> displayed = new java.util.ArrayList<>();
+
         for (Supply s : lowStock) {
-            listBox.getChildren().add(buildSupplyRow(s, WARNING, "LOW STOCK"));
+            boolean isCritical = s.getQuantity() < 10;
+            String tag = isCritical ? "CRITICAL" : "LOW STOCK";
+            String color = isCritical ? ERROR : WARNING;
+
+            listBox.getChildren().add(buildSupplyRow(s, color, tag));
+            displayed.add(s);
         }
-        // Use a Set for O(1) duplicate checks when adding expiring-only items
-        java.util.Set<String> lowStockNames = new java.util.HashSet<>();
-        for (Supply s : lowStock) {
-            lowStockNames.add(s.getName());
-        }
+
         for (Supply s : expiringSoon) {
-            if (!lowStockNames.contains(s.getName())) {
+            boolean alreadyShown = false;
+            for (Supply d : displayed) {
+                if (d == s) {
+                    alreadyShown = true;
+                    break;
+                }
+            }
+            if (!alreadyShown) {
                 listBox.getChildren().add(buildSupplyRow(s, WARNING, "EXPIRING"));
             }
         }
@@ -296,18 +306,22 @@ public class DashboardScreen extends VBox {
     }
 
     private void buildPersonnelStatusActivity() {
-        activityPane.getChildren().add(buildSectionHeader("PERSONNEL STATUS", "LIVE READINESS"));
+        activityPane.getChildren().add(buildSectionHeader("PERSONNEL STATUS", "LATEST 10 UPDATES"));
 
-        List<Personnel> all = model.getPersonnelList();
+        List<Personnel> all = new java.util.ArrayList<>(model.getPersonnelList());
         if (all.isEmpty()) {
             activityPane.getChildren().add(buildEmptyState("NO PERSONNEL ON RECORD"));
             return;
         }
 
+        all.sort(java.util.Comparator.comparing(Personnel::getLastModified).reversed()
+                .thenComparing(Personnel::getName));
+
+        List<Personnel> latest10 = all.stream().limit(10).toList();
+
         VBox listBox = new VBox(1);
         listBox.setStyle("-fx-background-color: " + BORDER + ";");
 
-        // Column header
         HBox header = new HBox();
         header.setPadding(new Insets(6, 16, 6, 16));
         header.setStyle("-fx-background-color: " + SURFACE_HI + ";");
@@ -316,7 +330,7 @@ public class DashboardScreen extends VBox {
         header.getChildren().addAll(hName, hStatus);
         listBox.getChildren().add(header);
 
-        for (Personnel p : all) {
+        for (Personnel p : latest10) {
             listBox.getChildren().add(buildPersonnelRow(p));
         }
         activityPane.getChildren().add(listBox);

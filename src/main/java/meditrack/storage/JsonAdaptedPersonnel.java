@@ -1,5 +1,6 @@
 package meditrack.storage;
 
+import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import meditrack.logic.commands.exceptions.CommandException;
@@ -18,18 +19,21 @@ public class JsonAdaptedPersonnel {
     public final String status;
     public final String bloodGroup;
     public final String allergies;
+    public final String lastModified;
 
     /** Jackson calls this when loading the file. */
     @JsonCreator
     public JsonAdaptedPersonnel(
-            @JsonProperty("name")       String name,
-            @JsonProperty("status")     String status,
-            @JsonProperty("bloodGroup") String bloodGroup,
-            @JsonProperty("allergies")  String allergies) {
-        this.name       = name;
-        this.status     = status;
-        this.bloodGroup = bloodGroup;
-        this.allergies  = allergies;
+            @JsonProperty("name")         String name,
+            @JsonProperty("status")       String status,
+            @JsonProperty("bloodGroup")   String bloodGroup,
+            @JsonProperty("allergies")    String allergies,
+            @JsonProperty("lastModified") String lastModified) {
+        this.name         = name;
+        this.status       = status;
+        this.bloodGroup   = bloodGroup;
+        this.allergies    = allergies;
+        this.lastModified = lastModified;
     }
 
     /** For saving turns model object into something Jackson can write. */
@@ -38,7 +42,9 @@ public class JsonAdaptedPersonnel {
                 source.getName(),
                 source.getStatus().name(),
                 source.getBloodGroup() != null ? source.getBloodGroup().name() : null,
-                source.getAllergies());
+                source.getAllergies(),
+                source.getLastModified() != null ? source.getLastModified().toString() : LocalDateTime.now().toString()
+        );
     }
 
     /**
@@ -62,6 +68,12 @@ public class JsonAdaptedPersonnel {
         BloodGroup parsedBloodGroup = (bloodGroup != null) ? BloodGroup.fromString(bloodGroup) : null;
         String parsedAllergies = (allergies != null) ? allergies : "";
 
-        return new Personnel(name.trim(), parsedStatus, parsedBloodGroup, parsedAllergies);
+        Personnel person = new Personnel(name.trim(), parsedStatus, parsedBloodGroup, parsedAllergies);
+
+        if (lastModified != null && !lastModified.isBlank()) {
+            person.setLastModified(LocalDateTime.parse(lastModified));
+        }
+
+        return person;
     }
 }

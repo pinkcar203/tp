@@ -28,7 +28,6 @@ public class Parser {
         switch (commandType) {
         case ADD_SUPPLY:
             validateSupplyFields(fields);
-            validateNoDuplicateSupplyName(fields.get("name"));
             break;
 
         case EDIT_SUPPLY:
@@ -81,14 +80,6 @@ public class Parser {
             }
         } catch (DateTimeParseException e) {
             throw new ParseException("Expiry Date: Expiry date must be a valid date in YYYY-MM-DD format.");
-        }
-    }
-
-    private void validateNoDuplicateSupplyName(String name) throws ParseException {
-        boolean duplicate = model.getFilteredSupplyList().stream()
-                .anyMatch(s -> s.getName().equalsIgnoreCase(name.trim()));
-        if (duplicate) {
-            throw new ParseException("Name: A supply with this name already exists.");
         }
     }
 

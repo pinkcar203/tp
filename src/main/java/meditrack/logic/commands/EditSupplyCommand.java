@@ -47,6 +47,6 @@ public class EditSupplyCommand extends Command {
     /** Field medic only. */
     @Override
     public List<Role> getRequiredRoles() {
-        return List.of(Role.FIELD_MEDIC);
+        return List.of(Role.FIELD_MEDIC, Role.LOGISTICS_OFFICER);
     }
 }

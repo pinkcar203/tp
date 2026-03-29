@@ -2,12 +2,13 @@ package meditrack.ui.screen;
 
 import java.time.LocalDate;
 import java.util.List;
-
+import java.util.Comparator;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -48,6 +49,7 @@ public class SupplyLevelsScreen extends VBox {
     private final TableView<Supply> table = new TableView<>();
 
     private FilteredList<Supply> filtered;
+    private SortedList<Supply> sorted;
     private final ObservableList<Supply> pageItems = FXCollections.observableArrayList();
     private int currentPage = 0;
 
@@ -72,7 +74,10 @@ public class SupplyLevelsScreen extends VBox {
         VBox.setVgrow(this, Priority.ALWAYS);
 
         filtered = new FilteredList<>(model.getFilteredSupplyList(), p -> true);
-        filtered.addListener((javafx.collections.ListChangeListener<Supply>) c -> {
+        sorted = new SortedList<>(filtered, Comparator.comparing((Supply s) -> s.getName().toLowerCase())
+                .thenComparingInt(SupplyLevelsScreen::getSeverityPriority)
+                .thenComparing(Supply::getExpiryDate));
+        sorted.addListener((javafx.collections.ListChangeListener<Supply>) c -> {
             currentPage = 0;
             updatePage();
         });
@@ -205,15 +210,12 @@ public class SupplyLevelsScreen extends VBox {
         TableColumn<Supply, Number> col = new TableColumn<>("#");
         col.setMinWidth(50);
         col.setMaxWidth(50);
-        col.setCellValueFactory(c -> {
-            int pageIdx = c.getTableView().getItems().indexOf(c.getValue());
-            return new ReadOnlyObjectWrapper<>(currentPage * PAGE_SIZE + pageIdx + 1);
-        });
+        col.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(0));
         col.setCellFactory(c -> new TableCell<Supply, Number>() {
             @Override
             protected void updateItem(Number v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) {
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setText(null);
                     setStyle("");
                     return;
@@ -223,8 +225,9 @@ public class SupplyLevelsScreen extends VBox {
                     setText(null);
                     return;
                 }
+                int globalIdx = currentPage * PAGE_SIZE + idx + 1;
                 String color = stateColor(state(getTableView().getItems().get(idx)));
-                setText(String.format("%03d", v.intValue()));
+                setText(String.format("%03d", globalIdx));
                 setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 12px;"
                         + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
             }
@@ -402,14 +405,14 @@ public class SupplyLevelsScreen extends VBox {
 
     private void updatePage() {
         int from = currentPage * PAGE_SIZE;
-        int size = filtered.size();
+        int size = sorted.size();
         int to = Math.min(from + PAGE_SIZE, size);
-        pageItems.setAll(from < size ? filtered.subList(from, to) : List.of());
+        pageItems.setAll(from < size ? sorted.subList(from, to) : List.of());
         updatePaginationControls();
     }
 
     private void updatePaginationControls() {
-        int totalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / PAGE_SIZE));
+        int totalPages = Math.max(1, (int) Math.ceil((double) sorted.size() / PAGE_SIZE));
         if (pageLabel != null)
             pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
         if (prevBtn != null)
@@ -443,8 +446,8 @@ public class SupplyLevelsScreen extends VBox {
 
     private void updateFooterStats() {
         int total = model.getFilteredSupplyList().size();
-        int lowStock = model.getLowStockSupplies(10).size();
-        int critical = model.getLowStockSupplies(5).size();
+        int lowStock = model.getLowStockSupplies(50).size();
+        int critical = model.getLowStockSupplies(10).size();
         if (totalLabel != null)
             totalLabel.setText("TOTAL ITEMS: " + total);
         if (lowStockLabel != null)
@@ -453,12 +456,22 @@ public class SupplyLevelsScreen extends VBox {
             criticalLabel.setText("CRITICAL: " + critical);
     }
 
+    /** Ranks supply severity. 1 = Worst, 5 = Best */
+    private static int getSeverityPriority(Supply s) {
+        LocalDate today = LocalDate.now();
+        if (s.getExpiryDate().isBefore(today) || s.getQuantity() == 0) return 1;
+        if (s.getQuantity() < 10) return 2;
+        if (s.getQuantity() < 50) return 3;
+        if (s.getExpiryDate().isBefore(today.plusDays(30))) return 4;
+        return 5;
+    }
+
     private String state(Supply s) {
         LocalDate today = LocalDate.now();
-        if (s.getExpiryDate().isBefore(today) || s.getQuantity() == 0) {
+        if (s.getExpiryDate().isBefore(today) || s.getQuantity() < 10) {
             return "ERROR";
         }
-        if (s.getQuantity() < 10 || s.getExpiryDate().isBefore(today.plusDays(30))) {
+        if (s.getQuantity() < 50 || s.getExpiryDate().isBefore(today.plusDays(30))) {
             return "WARNING";
         }
         return "NORMAL";

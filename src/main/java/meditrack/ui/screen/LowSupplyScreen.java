@@ -1,8 +1,8 @@
 package meditrack.ui.screen;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Comparator;
+import java.util.List;
+
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
@@ -23,8 +23,11 @@ import meditrack.commons.core.Constants;
 import meditrack.model.ModelManager;
 import meditrack.model.Supply;
 
-/** Field medic: supplies expiring within threshold. */
-public class ExpiringSoonScreen extends VBox {
+/**
+ * Screen displaying supplies that have fallen below the low stock threshold.
+ * The list is automatically sorted alphabetically by supply name to group batches together.
+ */
+public class LowSupplyScreen extends VBox {
 
     private static final String BG              = "#121410";
     private static final String SURFACE_LOW     = "#1a1c18";
@@ -47,25 +50,29 @@ public class ExpiringSoonScreen extends VBox {
     private int currentPage = 0;
 
     private Label countLabel;
-    private Label expiredLabel;
+    private Label criticalLabel;
     private Label pageLabel;
     private Button prevBtn;
     private Button nextBtn;
 
-    /** @param model used to read expiring supplies */
-    public ExpiringSoonScreen(ModelManager model) {
+    /** * Constructs the Low Supply screen.
+     * * @param model the data model used to read low stock supplies.
+     */
+    public LowSupplyScreen(ModelManager model) {
         this.model = model;
         buildUi();
         refresh();
     }
 
+    /**
+     * Initializes and arranges the root UI components for this screen.
+     */
     @SuppressWarnings("unchecked")
     private void buildUi() {
         setSpacing(0);
         setStyle("-fx-background-color: " + BG + ";");
         VBox.setVgrow(this, Priority.ALWAYS);
 
-        // Whenever tableItems changes (on refresh), reset to page 0 and repaginate
         tableItems.addListener((javafx.collections.ListChangeListener<Supply>) c -> {
             currentPage = 0;
             updatePage();
@@ -77,8 +84,10 @@ public class ExpiringSoonScreen extends VBox {
         getChildren().addAll(buildHeader(), tableSection, buildFooter());
     }
 
-    // Header
-
+    /**
+     * Builds the top header bar containing the title and threshold badge.
+     * * @return HBox containing the styled header.
+     */
     private HBox buildHeader() {
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -87,11 +96,11 @@ public class ExpiringSoonScreen extends VBox {
                 + OUTLINE_VAR + " transparent; -fx-border-width: 0 0 1 0;");
 
         VBox titleArea = new VBox(4);
-        Label title = new Label("EXPIRING SOON");
+        Label title = new Label("LOW SUPPLY ALERT");
         title.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 20px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', 'Courier New', monospace;");
-        Label subtitle = new Label("Supplies expiring within "
-                + Constants.EXPIRY_THRESHOLD_DAYS + " days — requires immediate attention.");
+        Label subtitle = new Label("Supplies below threshold (< "
+                + Constants.LOW_STOCK_THRESHOLD_QUANTITY + " units) — requires restocking.");
         subtitle.setStyle("-fx-text-fill: " + SECONDARY + "; -fx-font-size: 10px;"
                 + " -fx-font-family: 'Consolas', monospace;");
         titleArea.getChildren().addAll(title, subtitle);
@@ -99,8 +108,7 @@ public class ExpiringSoonScreen extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Threshold badge
-        Label badge = new Label("⚠  THRESHOLD: " + Constants.EXPIRY_THRESHOLD_DAYS + " DAYS");
+        Label badge = new Label("⚠  THRESHOLD: " + Constants.LOW_STOCK_THRESHOLD_QUANTITY + " UNITS");
         badge.setPadding(new Insets(6, 14, 6, 14));
         badge.setStyle("-fx-background-color: rgba(251,188,0,0.1); -fx-text-fill: " + WARNING + ";"
                 + " -fx-font-size: 10px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
@@ -110,8 +118,10 @@ public class ExpiringSoonScreen extends VBox {
         return header;
     }
 
-    // Table
-
+    /**
+     * Configures the TableView, its columns, and custom cell rendering.
+     * * @return VBox wrapping the configured table.
+     */
     @SuppressWarnings("unchecked")
     private VBox buildTableSection() {
         table.setItems(pageItems);
@@ -122,23 +132,21 @@ public class ExpiringSoonScreen extends VBox {
                 + " -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
         table.setPlaceholder(emptyPlaceholder());
 
-        // Style headers after skin loads
         table.skinProperty().addListener((obs, old, skin) -> {
             if (skin != null) Platform.runLater(() -> {
                 javafx.scene.Node hdrBg = table.lookup(".column-header-background");
                 if (hdrBg != null) hdrBg.setStyle("-fx-background-color: " + SURFACE_HIGH + ";");
                 table.lookupAll(".column-header").forEach(n -> n.setStyle(
                         "-fx-background-color: transparent; -fx-border-color: transparent transparent "
-                        + OUTLINE_VAR + " transparent; -fx-border-width: 0 0 1 0;"));
+                                + OUTLINE_VAR + " transparent; -fx-border-width: 0 0 1 0;"));
                 table.lookupAll(".column-header .label").forEach(n -> n.setStyle(
                         "-fx-text-fill: " + OUTLINE + "; -fx-font-size: 10px; -fx-font-weight: bold;"
-                        + " -fx-font-family: 'Consolas', monospace;"));
+                                + " -fx-font-family: 'Consolas', monospace;"));
                 javafx.scene.Node filler = table.lookup(".filler");
                 if (filler != null) filler.setStyle("-fx-background-color: " + SURFACE_HIGH + ";");
             });
         });
 
-        // Row factory — all rows are warning/error by definition
         table.setRowFactory(tv -> new javafx.scene.control.TableRow<Supply>() {
             @Override
             protected void updateItem(Supply item, boolean empty) {
@@ -148,133 +156,19 @@ public class ExpiringSoonScreen extends VBox {
                     setOnMouseEntered(null); setOnMouseExited(null);
                     return;
                 }
-                String bg = isExpired(item) ? "rgba(147,0,10,0.15)" : "rgba(251,188,0,0.04)";
+                String bg = isCritical(item) ? "rgba(147,0,10,0.15)" : "rgba(251,188,0,0.04)";
                 setStyle("-fx-background-color: " + bg + ";");
                 setOnMouseEntered(e -> setStyle("-fx-background-color: " + SURFACE_BRIGHT + ";"));
                 setOnMouseExited(e -> setStyle("-fx-background-color: " + bg + ";"));
             }
         });
 
-        // Index column — shows global position across all pages
-        TableColumn<Supply, Number> idxCol = new TableColumn<>("#");
-        idxCol.setMinWidth(50); idxCol.setMaxWidth(50);
-        idxCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(0));
-        idxCol.setCellFactory(col -> new TableCell<Supply, Number>() {
-            @Override protected void updateItem(Number v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setText(null); setStyle(""); return;
-                }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
-                int globalIdx = currentPage * PAGE_SIZE + idx + 1;
-                String color = isExpired(getTableView().getItems().get(idx)) ? ERROR : WARNING;
-                setText(String.format("%03d", globalIdx));
-                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 12px;"
-                        + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-            }
-        });
-
-        // Name column
-        TableColumn<Supply, String> nameCol = new TableColumn<>("SUPPLY NAME");
-        nameCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
-        nameCol.setCellFactory(col -> new TableCell<Supply, String>() {
-            private final Region dot = new Region();
-            private final Label lbl = new Label();
-            private final HBox box  = new HBox(10, dot, lbl);
-            { dot.setMinSize(8, 8); dot.setMaxSize(8, 8); box.setAlignment(Pos.CENTER_LEFT); }
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
-                String color = isExpired(getTableView().getItems().get(idx)) ? ERROR : WARNING;
-                dot.setStyle("-fx-background-color: " + color + ";");
-                lbl.setText(v.toUpperCase());
-                lbl.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 12px; -fx-font-weight: bold;"
-                        + " -fx-font-family: 'Consolas', monospace;");
-                setGraphic(box);
-                setStyle("-fx-background-color: transparent;");
-            }
-        });
-
-        // Quantity column
-        TableColumn<Supply, Integer> qtyCol = new TableColumn<>("QUANTITY");
-        qtyCol.setMinWidth(100); qtyCol.setMaxWidth(100);
-        qtyCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getQuantity()));
-        qtyCol.setCellFactory(col -> new TableCell<Supply, Integer>() {
-            private final Label badge = new Label();
-            { badge.setPadding(new Insets(3, 10, 3, 10)); badge.setAlignment(Pos.CENTER); }
-            @Override protected void updateItem(Integer v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
-                badge.setText(String.format("%03d", v));
-                if (expired) {
-                    badge.setStyle("-fx-background-color: rgba(255,180,171,0.15); -fx-text-fill: " + ERROR + ";"
-                            + " -fx-border-color: rgba(255,180,171,0.3); -fx-border-width: 1;"
-                            + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
-                } else {
-                    badge.setStyle("-fx-background-color: rgba(251,188,0,0.1); -fx-text-fill: " + WARNING + ";"
-                            + " -fx-border-color: rgba(251,188,0,0.2); -fx-border-width: 1;"
-                            + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
-                }
-                setGraphic(badge);
-                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER;");
-            }
-        });
-
-        // Expiry column
-        TableColumn<Supply, LocalDate> expiryCol = new TableColumn<>("EXPIRY DATE");
-        expiryCol.setMinWidth(160); expiryCol.setMaxWidth(200);
-        expiryCol.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getExpiryDate()));
-        expiryCol.setCellFactory(col -> new TableCell<Supply, LocalDate>() {
-            @Override protected void updateItem(LocalDate v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setText(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
-                if (isExpired(getTableView().getItems().get(idx))) {
-                    setText("EXPIRED");
-                    setStyle("-fx-text-fill: " + ERROR + "; -fx-font-weight: bold; -fx-font-size: 11px;"
-                            + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-                } else {
-                    long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), v);
-                    setText(v.toString().replace("-", ".") + "  [" + daysLeft + "d]");
-                    setStyle("-fx-text-fill: " + WARNING + "; -fx-font-size: 10px;"
-                            + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-                }
-            }
-        });
-
-        // Status column (read-only badge)
-        TableColumn<Supply, String> statusCol = new TableColumn<>("STATUS");
-        statusCol.setMinWidth(120); statusCol.setMaxWidth(140);
-        statusCol.setCellValueFactory(c ->
-                new ReadOnlyObjectWrapper<>(isExpired(c.getValue()) ? "EXPIRED" : "EXPIRING"));
-        statusCol.setCellFactory(col -> new TableCell<Supply, String>() {
-            private final Label tag = new Label();
-            { tag.setPadding(new Insets(3, 10, 3, 10)); }
-            @Override protected void updateItem(String v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
-                boolean expired = "EXPIRED".equals(v);
-                tag.setText(v);
-                tag.setStyle((expired
-                        ? "-fx-text-fill: " + ERROR + "; -fx-border-color: rgba(255,180,171,0.3);"
-                          + " -fx-background-color: rgba(255,180,171,0.1);"
-                        : "-fx-text-fill: " + WARNING + "; -fx-border-color: rgba(251,188,0,0.3);"
-                          + " -fx-background-color: rgba(251,188,0,0.08);")
-                        + " -fx-border-width: 1; -fx-font-size: 9px; -fx-font-weight: bold;"
-                        + " -fx-font-family: 'Consolas', monospace;");
-                setGraphic(tag);
-                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER_LEFT;");
-            }
-        });
-
-        table.getColumns().addAll(idxCol, nameCol, qtyCol, expiryCol, statusCol);
+        table.getColumns().addAll(
+                buildIndexColumn(),
+                buildNameColumn(),
+                buildQuantityColumn(),
+                buildStatusColumn()
+        );
 
         VBox section = new VBox(0);
         VBox.setVgrow(section, Priority.ALWAYS);
@@ -284,8 +178,118 @@ public class ExpiringSoonScreen extends VBox {
         return section;
     }
 
-    // Footer
+    /** Creates the index column. */
+    private TableColumn<Supply, Number> buildIndexColumn() {
+        TableColumn<Supply, Number> col = new TableColumn<>("#");
+        col.setMinWidth(50); col.setMaxWidth(50);
+        col.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(0));
+        col.setCellFactory(c -> new TableCell<Supply, Number>() {
+            @Override protected void updateItem(Number v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null); setStyle(""); return;
+                }
+                int idx = getIndex();
+                if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
+                int globalIdx = currentPage * PAGE_SIZE + idx + 1;
+                String color = isCritical(getTableView().getItems().get(idx)) ? ERROR : WARNING;
+                setText(String.format("%03d", globalIdx));
+                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 12px;"
+                        + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
+            }
+        });
+        return col;
+    }
 
+    /** Creates the supply name column. */
+    private TableColumn<Supply, String> buildNameColumn() {
+        TableColumn<Supply, String> col = new TableColumn<>("SUPPLY NAME");
+        col.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
+        col.setCellFactory(c -> new TableCell<Supply, String>() {
+            private final Region dot = new Region();
+            private final Label lbl = new Label();
+            private final HBox box  = new HBox(10, dot, lbl);
+            { dot.setMinSize(8, 8); dot.setMaxSize(8, 8); box.setAlignment(Pos.CENTER_LEFT); }
+            @Override protected void updateItem(String v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
+                int idx = getIndex();
+                if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
+                String color = isCritical(getTableView().getItems().get(idx)) ? ERROR : WARNING;
+                dot.setStyle("-fx-background-color: " + color + ";");
+                lbl.setText(v.toUpperCase());
+                lbl.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 12px; -fx-font-weight: bold;"
+                        + " -fx-font-family: 'Consolas', monospace;");
+                setGraphic(box);
+                setStyle("-fx-background-color: transparent;");
+            }
+        });
+        return col;
+    }
+
+    /** Creates the numerical quantity column. */
+    private TableColumn<Supply, Integer> buildQuantityColumn() {
+        TableColumn<Supply, Integer> col = new TableColumn<>("QUANTITY");
+        col.setMinWidth(120); col.setMaxWidth(160);
+        col.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getQuantity()));
+        col.setCellFactory(c -> new TableCell<Supply, Integer>() {
+            private final Label badge = new Label();
+            { badge.setPadding(new Insets(3, 10, 3, 10)); badge.setAlignment(Pos.CENTER); }
+            @Override protected void updateItem(Integer v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
+                int idx = getIndex();
+                if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
+                boolean critical = isCritical(getTableView().getItems().get(idx));
+                badge.setText(String.format("%03d", v));
+                if (critical) {
+                    badge.setStyle("-fx-background-color: rgba(255,180,171,0.15); -fx-text-fill: " + ERROR + ";"
+                            + " -fx-border-color: rgba(255,180,171,0.3); -fx-border-width: 1;"
+                            + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
+                } else {
+                    badge.setStyle("-fx-background-color: rgba(251,188,0,0.1); -fx-text-fill: " + WARNING + ";"
+                            + " -fx-border-color: rgba(251,188,0,0.2); -fx-border-width: 1;"
+                            + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
+                }
+                setGraphic(badge);
+                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER_LEFT;");
+            }
+        });
+        return col;
+    }
+
+    /** Creates the visual status badge column. */
+    private TableColumn<Supply, String> buildStatusColumn() {
+        TableColumn<Supply, String> col = new TableColumn<>("STATUS");
+        col.setMinWidth(120); col.setMaxWidth(160);
+        col.setCellValueFactory(c ->
+                new ReadOnlyObjectWrapper<>(isCritical(c.getValue()) ? "CRITICAL" : "LOW STOCK"));
+        col.setCellFactory(c -> new TableCell<Supply, String>() {
+            private final Label tag = new Label();
+            { tag.setPadding(new Insets(3, 10, 3, 10)); }
+            @Override protected void updateItem(String v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) { setGraphic(null); setStyle(""); return; }
+                boolean critical = "CRITICAL".equals(v);
+                tag.setText(v);
+                tag.setStyle((critical
+                        ? "-fx-text-fill: " + ERROR + "; -fx-border-color: rgba(255,180,171,0.3);"
+                        + " -fx-background-color: rgba(255,180,171,0.1);"
+                        : "-fx-text-fill: " + WARNING + "; -fx-border-color: rgba(251,188,0,0.3);"
+                        + " -fx-background-color: rgba(251,188,0,0.08);")
+                        + " -fx-border-width: 1; -fx-font-size: 9px; -fx-font-weight: bold;"
+                        + " -fx-font-family: 'Consolas', monospace;");
+                setGraphic(tag);
+                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER_LEFT;");
+            }
+        });
+        return col;
+    }
+
+    /**
+     * Builds the footer for pagination and statistical summaries.
+     * * @return HBox containing the footer components.
+     */
     private HBox buildFooter() {
         HBox footer = new HBox(12);
         footer.setAlignment(Pos.CENTER_LEFT);
@@ -293,12 +297,12 @@ public class ExpiringSoonScreen extends VBox {
         footer.setPrefHeight(44); footer.setMinHeight(44);
         footer.setStyle("-fx-background-color: " + SURFACE_HIGHEST + ";");
 
-        countLabel = new Label("EXPIRING: 0");
+        countLabel = new Label("LOW STOCK: 0");
         countLabel.setStyle("-fx-text-fill: " + WARNING + "; -fx-font-size: 10px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', monospace;");
 
-        expiredLabel = new Label();
-        expiredLabel.setStyle("-fx-text-fill: " + ERROR + "; -fx-font-size: 10px; -fx-font-weight: bold;"
+        criticalLabel = new Label();
+        criticalLabel.setStyle("-fx-text-fill: " + ERROR + "; -fx-font-size: 10px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', monospace;");
 
         Region spacer = new Region();
@@ -326,12 +330,11 @@ public class ExpiringSoonScreen extends VBox {
             }
         });
 
-        footer.getChildren().addAll(countLabel, expiredLabel, spacer, prevBtn, pageLabel, nextBtn);
+        footer.getChildren().addAll(countLabel, criticalLabel, spacer, prevBtn, pageLabel, nextBtn);
         return footer;
     }
 
-    // Pagination
-
+    /** Updates the visible rows based on the current page index. */
     private void updatePage() {
         int from = currentPage * PAGE_SIZE;
         int size = tableItems.size();
@@ -340,6 +343,7 @@ public class ExpiringSoonScreen extends VBox {
         updatePaginationControls();
     }
 
+    /** Updates the UI state of pagination buttons and labels. */
     private void updatePaginationControls() {
         int totalPages = Math.max(1, (int) Math.ceil((double) tableItems.size() / PAGE_SIZE));
         if (pageLabel != null) pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
@@ -347,6 +351,7 @@ public class ExpiringSoonScreen extends VBox {
         if (nextBtn   != null) nextBtn.setDisable(currentPage >= totalPages - 1);
     }
 
+    /** Creates a styled pagination navigation button. */
     private Button pageNavBtn(String text) {
         String base  = "-fx-background-color: " + SURFACE_HIGH + "; -fx-text-fill: " + SECONDARY + ";"
                 + " -fx-font-size: 10px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
@@ -361,34 +366,34 @@ public class ExpiringSoonScreen extends VBox {
         return btn;
     }
 
-    // Refresh
-
-    /** Reloads data from the model. Call on every show. */
+    /** * Reloads data from the model. Must be called when the screen is shown
+     * or when underlying inventory changes.
+     */
     public void refresh() {
-        List<Supply> expiring = model.getExpiringSupplies(Constants.EXPIRY_THRESHOLD_DAYS);
+        List<Supply> lowStock = model.getLowStockSupplies(Constants.LOW_STOCK_THRESHOLD_QUANTITY);
 
-        expiring.sort(Comparator.comparing((Supply s) -> s.getName().toLowerCase())
-                .thenComparing(Supply::getExpiryDate));
+        lowStock.sort(Comparator.comparing((Supply s) -> s.getName().toLowerCase()));
 
-        tableItems.setAll(expiring);
-        updateFooterStats(expiring);
+        tableItems.setAll(lowStock);
+        updateFooterStats(lowStock);
     }
 
+    /** Updates the statistical counters in the footer. */
     private void updateFooterStats(List<Supply> items) {
-        long expired  = items.stream().filter(this::isExpired).count();
-        long upcoming = items.size() - expired;
-        if (countLabel   != null) countLabel.setText("EXPIRING SOON: " + upcoming);
-        if (expiredLabel != null) expiredLabel.setText("ALREADY EXPIRED: " + expired);
+        long critical  = items.stream().filter(this::isCritical).count();
+        long standardLow = items.size() - critical;
+        if (countLabel != null) countLabel.setText("LOW STOCK: " + standardLow);
+        if (criticalLabel != null) criticalLabel.setText("CRITICAL (<5): " + critical);
     }
 
-    // Helpers
-
-    private boolean isExpired(Supply s) {
-        return s.getExpiryDate().isBefore(LocalDate.now());
+    /** Checks if a supply is critically low (below 5). */
+    private boolean isCritical(Supply s) {
+        return s.getQuantity() < 5;
     }
 
+    /** Generates the placeholder label shown when the table is empty. */
     private Label emptyPlaceholder() {
-        Label lbl = new Label("ALL SUPPLIES WITHIN TOLERANCE");
+        Label lbl = new Label("ALL SUPPLY LEVELS NOMINAL");
         lbl.setStyle("-fx-text-fill: " + PRIMARY + "; -fx-font-size: 11px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', monospace;");
         return lbl;

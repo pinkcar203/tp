@@ -1,13 +1,14 @@
 package meditrack.ui.screen;
 
 import java.util.List;
+import java.util.Comparator;
 import java.util.stream.Collectors;
-
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -50,6 +51,9 @@ public class MedicalAttentionScreen extends VBox {
     private final ModelManager model;
     private final ObservableList<Personnel> tableData = FXCollections.observableArrayList();
     private final FilteredList<Personnel> filteredData = new FilteredList<>(tableData, p -> true);
+    private final SortedList<Personnel> sortedData = new SortedList<>(filteredData,
+            Comparator.comparingInt((Personnel p) -> getStatusPriority(p.getStatus()))
+                    .thenComparing((p1, p2) -> p2.getLastModified().compareTo(p1.getLastModified())));
     private final ObservableList<Personnel> pageItems = FXCollections.observableArrayList();
     private int currentPage = 0;
 
@@ -349,14 +353,14 @@ public class MedicalAttentionScreen extends VBox {
 
     private void updatePage() {
         int from = currentPage * PAGE_SIZE;
-        int size = filteredData.size();
+        int size = sortedData.size();
         int to = Math.min(from + PAGE_SIZE, size);
-        pageItems.setAll(from < size ? filteredData.subList(from, to) : List.of());
+        pageItems.setAll(from < size ? sortedData.subList(from, to) : List.of());
         updatePaginationControls();
     }
 
     private void updatePaginationControls() {
-        int totalPages = Math.max(1, (int) Math.ceil((double) filteredData.size() / PAGE_SIZE));
+        int totalPages = Math.max(1, (int) Math.ceil((double) sortedData.size() / PAGE_SIZE));
         if (pageLabel != null)
             pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
         if (prevBtn != null)
@@ -427,6 +431,16 @@ public class MedicalAttentionScreen extends VBox {
             case MC -> WARNING;
             case CASUALTY -> ERROR;
             case PENDING -> OUTLINE;
+        };
+    }
+
+    private int getStatusPriority(Status status) {
+        return switch (status) {
+            case CASUALTY -> 1;
+            case PENDING -> 2;
+            case LIGHT_DUTY -> 3;
+            case MC -> 4;
+            default -> 5;
         };
     }
 

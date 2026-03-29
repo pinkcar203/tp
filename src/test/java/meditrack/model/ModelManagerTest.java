@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import meditrack.commons.core.Index;
-import meditrack.model.exceptions.DuplicateSupplyException;
 import meditrack.model.exceptions.InvalidIndexException;
 
 class ModelManagerTest {
@@ -30,15 +29,6 @@ class ModelManagerTest {
         modelManager.addSupply(supply);
         assertEquals(1, modelManager.getFilteredSupplyList().size());
         assertEquals("Bandages", modelManager.getFilteredSupplyList().get(0).getName());
-    }
-
-    @Test
-    void addSupply_duplicateName_throwsDuplicateSupplyException() {
-        Supply supply1 = new Supply("Bandages", 100, LocalDate.of(2027, 6, 1));
-        Supply supply2 = new Supply("bandages", 50, LocalDate.of(2028, 1, 1));
-
-        modelManager.addSupply(supply1);
-        assertThrows(DuplicateSupplyException.class, () -> modelManager.addSupply(supply2));
     }
 
     @Test

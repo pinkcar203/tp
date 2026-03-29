@@ -7,8 +7,6 @@ import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import meditrack.model.exceptions.DuplicateSupplyException;
-
 /**
  * Root data container that holds both the supply and personnel lists.
  */
@@ -50,11 +48,8 @@ public class MediTrack implements ReadOnlyMediTrack {
         return supplies.stream().anyMatch(s -> s.equals(supply));
     }
 
-    /** Adds a supply; throws DuplicateSupplyException if the name already exists. */
+    /** Adds a supply to the inventory. Duplicate names are now allowed for different batches. */
     public void addSupply(Supply supply) {
-        if (hasSupply(supply)) {
-            throw new DuplicateSupplyException();
-        }
         supplies.add(supply);
     }
 

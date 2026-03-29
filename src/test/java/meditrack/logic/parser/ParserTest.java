@@ -101,19 +101,6 @@ class ParserTest {
     }
 
     @Test
-    void validate_addSupply_duplicateName_throwsParseException() {
-        model.addSupply(new Supply("Bandages", 50, LocalDate.of(2027, 6, 1)));
-
-        ParseException ex = assertThrows(ParseException.class, () ->
-                parser.validate(CommandType.ADD_SUPPLY, Map.of(
-                        "name", "bandages",
-                        "qty", "100",
-                        "expiry", LocalDate.now().plusDays(60).toString()
-                )));
-        assertTrue(ex.getMessage().contains("Name"));
-    }
-
-    @Test
     void validate_editSupply_validFields_success() {
         model.addSupply(new Supply("Bandages", 50, LocalDate.of(2027, 6, 1)));
 

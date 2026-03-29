@@ -7,16 +7,14 @@ import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
 import meditrack.model.Supply;
-import meditrack.model.exceptions.DuplicateSupplyException;
 
 /**
  * Adds a new supply item to the inventory.
- * Only the Field Medic role can run this command.
+ * Field Medic and Logistics Officer roles can run this command.
  */
 public class AddSupplyCommand extends Command {
 
     public static final String MESSAGE_SUCCESS = "New supply added: %s (Qty: %d, Expiry: %s)";
-    public static final String MESSAGE_DUPLICATE = "A supply with this name already exists in the inventory.";
 
     private final String name;
     private final int quantity;
@@ -36,18 +34,14 @@ public class AddSupplyCommand extends Command {
     /** Adds the supply to the model. */
     @Override
     public CommandResult execute(Model model) throws CommandException {
-        try {
-            Supply supply = new Supply(name, quantity, expiryDate);
-            model.addSupply(supply);
-        } catch (DuplicateSupplyException e) {
-            throw new CommandException(MESSAGE_DUPLICATE);
-        }
+        Supply supply = new Supply(name, quantity, expiryDate);
+        model.addSupply(supply);
         return new CommandResult(String.format(MESSAGE_SUCCESS, name, quantity, expiryDate));
     }
 
     /** Field medic only. */
     @Override
     public List<Role> getRequiredRoles() {
-        return List.of(Role.FIELD_MEDIC);
+        return List.of(Role.FIELD_MEDIC, Role.LOGISTICS_OFFICER);
     }
 }

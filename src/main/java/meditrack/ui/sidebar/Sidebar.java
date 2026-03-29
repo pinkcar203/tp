@@ -21,6 +21,7 @@ public class Sidebar extends VBox {
         MEDICAL_ATTENTION,
         DUTY_ROSTER,
         INVENTORY,
+        LOW_SUPPLY,
         EXPIRING_SOON,
         SUPPLY_LEVELS,
         RESUPPLY_REPORT
@@ -95,6 +96,7 @@ public class Sidebar extends VBox {
         // Role-specific nav
         if (role == Role.FIELD_MEDIC) {
             getChildren().add(navButton("INVENTORY", Screen.INVENTORY));
+            getChildren().add(navButton("LOW SUPPLY", Screen.LOW_SUPPLY));
             getChildren().add(navButton("EXPIRING SOON", Screen.EXPIRING_SOON));
             getChildren().add(navButton("PERSONNEL", Screen.PERSONNEL));
         } else if (role == Role.MEDICAL_OFFICER) {

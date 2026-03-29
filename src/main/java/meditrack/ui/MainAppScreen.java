@@ -16,6 +16,7 @@ import meditrack.model.Session;
 import meditrack.storage.StorageManager;
 import meditrack.ui.screen.DashboardScreen;
 import meditrack.ui.screen.DutyRosterScreen;
+import meditrack.ui.screen.LowSupplyScreen;
 import meditrack.ui.screen.ExpiringSoonScreen;
 import meditrack.ui.screen.MedicalAttentionScreen;
 import meditrack.ui.screen.InventoryScreen;
@@ -47,6 +48,7 @@ public class MainAppScreen extends HBox {
     private DutyRosterScreen dutyRosterScreen;
     private MedicalAttentionScreen medicalAttentionScreen;
     private InventoryScreen inventoryScreen;
+    private LowSupplyScreen lowSupplyScreen;
     private ExpiringSoonScreen expiringSoonScreen;
     private SupplyLevelsScreen supplyLevelsScreen;
     private ResupplyReportScreen resupplyReportScreen;
@@ -115,6 +117,13 @@ public class MainAppScreen extends HBox {
                     inventoryScreen = new InventoryScreen(model, logic);
                 }
                 contentArea.getChildren().add(inventoryScreen);
+                break;
+            case LOW_SUPPLY:
+                if (lowSupplyScreen == null) {
+                    lowSupplyScreen = new LowSupplyScreen(model);
+                }
+                lowSupplyScreen.refresh();
+                contentArea.getChildren().add(lowSupplyScreen);
                 break;
             case EXPIRING_SOON:
                 if (expiringSoonScreen == null) {

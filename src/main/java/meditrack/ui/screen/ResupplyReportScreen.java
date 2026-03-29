@@ -4,14 +4,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Comparator;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -24,12 +22,12 @@ import javafx.scene.layout.VBox;
 import meditrack.commons.core.Constants;
 import meditrack.logic.Logic;
 import meditrack.logic.commands.GenerateResupplyReportCommand;
-import meditrack.logic.commands.GenerateResupplyReportCommand.ReportEntry;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.logic.parser.CommandType;
 import meditrack.logic.parser.Parser;
 import meditrack.logic.parser.exceptions.ParseException;
 import meditrack.model.ModelManager;
+import meditrack.model.Supply;
 
 /**
  * Resupply Report screen generates and displays flagged supply items.
@@ -77,6 +75,8 @@ public class ResupplyReportScreen extends VBox {
         VBox.setVgrow(tableSection, Priority.ALWAYS);
 
         getChildren().addAll(buildHeader(), tableSection, buildFooter());
+
+        handleGenerateReport();
     }
 
     // Header
@@ -92,7 +92,7 @@ public class ResupplyReportScreen extends VBox {
         Label title = new Label("RESUPPLY REPORT");
         title.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 20px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', 'Courier New', monospace;");
-        feedbackLabel = new Label("Press GENERATE to run the report.");
+        feedbackLabel = new Label("Auto-generated stock report.");
         feedbackLabel.setStyle("-fx-text-fill: " + SECONDARY + "; -fx-font-size: 10px;"
                 + " -fx-font-family: 'Consolas', monospace;");
         titleArea.getChildren().addAll(title, feedbackLabel);
@@ -100,21 +100,7 @@ public class ResupplyReportScreen extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        String normal = "-fx-background-color: " + PRIMARY_CONT + "; -fx-text-fill: white;"
-                + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
-                + " -fx-cursor: hand; -fx-background-radius: 0;";
-        String hover = "-fx-background-color: " + PRIMARY + "; -fx-text-fill: " + ON_PRIMARY + ";"
-                + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
-                + " -fx-cursor: hand; -fx-background-radius: 0;";
-        Button generateBtn = new Button("GENERATE REPORT");
-        generateBtn.setPrefHeight(42);
-        generateBtn.setPadding(new Insets(0, 20, 0, 20));
-        generateBtn.setStyle(normal);
-        generateBtn.setOnMouseEntered(e -> generateBtn.setStyle(hover));
-        generateBtn.setOnMouseExited(e -> generateBtn.setStyle(normal));
-        generateBtn.setOnAction(e -> handleGenerateReport());
-
-        header.getChildren().addAll(titleArea, spacer, generateBtn);
+        header.getChildren().addAll(titleArea, spacer);
         return header;
     }
 
@@ -186,18 +172,24 @@ public class ResupplyReportScreen extends VBox {
         TableColumn<ReportRow, Number> col = new TableColumn<>("#");
         col.setMinWidth(50);
         col.setMaxWidth(50);
-        col.setCellValueFactory(c ->
-                new ReadOnlyObjectWrapper<>(reportTable.getItems().indexOf(c.getValue()) + 1));
+        col.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(0));
         col.setCellFactory(c -> new TableCell<ReportRow, Number>() {
             @Override
             protected void updateItem(Number v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setText(null); setStyle(""); return; }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null); setStyle(""); return;
+                }
                 int idx = getIndex();
                 if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
-                setText(String.format("%03d", v.intValue()));
-                setStyle("-fx-text-fill: " + (expired ? ERROR : WARNING) + "; -fx-font-weight: bold;"
+
+                int globalIdx = idx + 1;
+
+                ReportRow row = getTableView().getItems().get(idx);
+                boolean isError = row.getReason().contains("CRITICAL") || row.getReason().contains("EXPIRED");
+
+                setText(String.format("%03d", globalIdx));
+                setStyle("-fx-text-fill: " + (isError ? ERROR : WARNING) + "; -fx-font-weight: bold;"
                         + " -fx-font-size: 12px; -fx-font-family: 'Consolas', monospace;"
                         + " -fx-background-color: transparent;");
             }
@@ -224,8 +216,11 @@ public class ResupplyReportScreen extends VBox {
                 if (empty || v == null) { setGraphic(null); setStyle(""); return; }
                 int idx = getIndex();
                 if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
-                String color = expired ? ERROR : WARNING;
+
+                ReportRow row = getTableView().getItems().get(idx);
+                boolean isError = row.getReason().contains("CRITICAL") || row.getReason().contains("EXPIRED");
+                String color = isError ? ERROR : WARNING;
+
                 dot.setStyle("-fx-background-color: " + color + ";");
                 lbl.setText(v.toUpperCase());
                 lbl.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 12px; -fx-font-weight: bold;"
@@ -252,15 +247,24 @@ public class ResupplyReportScreen extends VBox {
                 if (empty || v == null) { setGraphic(null); setStyle(""); return; }
                 int idx = getIndex();
                 if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
+
+                boolean isExpired = getTableView().getItems().get(idx).getExpiryDate().isBefore(LocalDate.now());
+                boolean isCritical = v < 10 || isExpired;
+                boolean isLow = v < 50;
+
                 badge.setText(String.format("%03d", v));
-                if (expired) {
+
+                if (isCritical) {
                     badge.setStyle("-fx-background-color: rgba(255,180,171,0.15); -fx-text-fill: " + ERROR + ";"
                             + " -fx-border-color: rgba(255,180,171,0.3); -fx-border-width: 1;"
                             + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
-                } else {
+                } else if (isLow) {
                     badge.setStyle("-fx-background-color: rgba(251,188,0,0.1); -fx-text-fill: " + WARNING + ";"
                             + " -fx-border-color: rgba(251,188,0,0.2); -fx-border-width: 1;"
+                            + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
+                } else {
+                    badge.setStyle("-fx-background-color: " + SURFACE_HIGHEST + "; -fx-text-fill: " + ON_SURFACE + ";"
+                            + " -fx-border-color: rgba(69,72,60,0.3); -fx-border-width: 1;"
                             + " -fx-font-weight: bold; -fx-font-size: 15px; -fx-font-family: 'Consolas', monospace;");
                 }
                 setGraphic(badge);
@@ -308,17 +312,17 @@ public class ResupplyReportScreen extends VBox {
             protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
                 if (empty || v == null) { setGraphic(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setGraphic(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
-                String color = expired ? ERROR : WARNING;
+
+                boolean isError = v.contains("CRITICAL") || v.contains("EXPIRED");
+                String color = isError ? ERROR : WARNING;
+
                 badge.setText(v.toUpperCase());
                 badge.setStyle("-fx-text-fill: " + color + "; -fx-font-size: 10px; -fx-font-weight: bold;"
                         + " -fx-font-family: 'Consolas', monospace;"
                         + " -fx-border-color: " + color + "; -fx-border-width: 1;"
                         + " -fx-background-color: transparent;");
                 setGraphic(badge);
-                setStyle("-fx-background-color: transparent;");
+                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER_LEFT;");
             }
         });
         return col;
@@ -362,25 +366,40 @@ public class ResupplyReportScreen extends VBox {
             return;
         }
 
-        List<ReportEntry> entries = GenerateResupplyReportCommand.collectFlaggedEntries(model,
-                Constants.LOW_STOCK_THRESHOLD_QUANTITY,
-                Constants.EXPIRY_THRESHOLD_DAYS);
+        List<ReportRow> rows = new ArrayList<>();
+        LocalDate today = LocalDate.now();
 
-        if (entries.isEmpty()) {
-            setFeedback(GenerateResupplyReportCommand.MESSAGE_ALL_CLEAR, false);
+        for (Supply s : model.getFilteredSupplyList()) {
+            boolean isExpired = s.getExpiryDate().isBefore(today);
+            boolean isExpiring = !isExpired && s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS));
+            boolean isCritical = s.getQuantity() < 10;
+            boolean isLowStock = !isCritical && s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY;
+
+            String reason = null;
+            if (isExpired && isCritical) reason = "EXPIRED & CRITICAL";
+            else if (isExpired && isLowStock) reason = "EXPIRED & LOW STOCK";
+            else if (isExpired) reason = "EXPIRED";
+            else if (isExpiring && isCritical) reason = "CRITICAL & EXPIRING";
+            else if (isExpiring && isLowStock) reason = "LOW STOCK & EXPIRING";
+            else if (isCritical) reason = "CRITICAL";
+            else if (isLowStock) reason = "LOW STOCK";
+            else if (isExpiring) reason = "EXPIRING SOON";
+
+            if (reason != null) {
+                rows.add(new ReportRow(s.getName(), s.getQuantity(), s.getExpiryDate(), reason));
+            }
+        }
+
+        if (rows.isEmpty()) {
+            setFeedback("All Clear: No supplies flagged.", false);
             reportTable.setItems(FXCollections.observableArrayList());
             updateFlaggedCount(0);
             return;
         }
 
-        List<ReportRow> rows = new ArrayList<>();
-        for (ReportEntry entry : entries) {
-            rows.add(new ReportRow(
-                    entry.getSupply().getName(),
-                    entry.getSupply().getQuantity(),
-                    entry.getSupply().getExpiryDate(),
-                    entry.getReason()));
-        }
+        rows.sort(Comparator.comparing((ReportRow r) -> r.getName().toLowerCase())
+                .thenComparing(ReportRow::getExpiryDate));
+
         reportTable.setItems(FXCollections.observableArrayList(rows));
         setFeedback(rows.size() + " item" + (rows.size() == 1 ? "" : "s") + " flagged for resupply.", true);
         updateFlaggedCount(rows.size());

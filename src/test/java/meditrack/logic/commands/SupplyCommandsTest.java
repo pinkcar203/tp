@@ -36,14 +36,6 @@ class SupplyCommandsTest {
     }
 
     @Test
-    void addSupplyCommand_duplicateName_throwsCommandException() {
-        model.addSupply(new Supply("Bandages", 50, LocalDate.of(2027, 6, 1)));
-
-        AddSupplyCommand cmd = new AddSupplyCommand("bandages", 100, LocalDate.of(2028, 1, 1));
-        assertThrows(CommandException.class, () -> cmd.execute(model));
-    }
-
-    @Test
     void addSupplyCommand_requiredRole_isFieldMedic() {
         AddSupplyCommand cmd = new AddSupplyCommand("Test", 1, LocalDate.of(2027, 1, 1));
         assertEquals(Role.FIELD_MEDIC, cmd.getRequiredRoles());

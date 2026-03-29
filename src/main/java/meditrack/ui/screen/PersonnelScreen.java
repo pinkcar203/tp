@@ -2,12 +2,13 @@ package meditrack.ui.screen;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Comparator;
 import java.util.stream.Collectors;
-
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -65,6 +66,8 @@ public class PersonnelScreen extends VBox {
 
     private final ObservableList<Personnel> tableData = FXCollections.observableArrayList();
     private final FilteredList<Personnel> filteredData = new FilteredList<>(tableData, p -> true);
+    private final SortedList<Personnel> sortedData = new SortedList<>(filteredData,
+            Comparator.comparing(p -> p.getName().toLowerCase()));
     private final ObservableList<Personnel> pageItems = FXCollections.observableArrayList();
     private int currentPage = 0;
 
@@ -468,21 +471,30 @@ public class PersonnelScreen extends VBox {
     @SuppressWarnings("unchecked")
     private TableCell<Personnel, String> buildEditableStatusCell() {
         ObservableList<Status> options = (Session.getInstance().getRole() == Role.FIELD_MEDIC)
-                ? FXCollections.observableArrayList(Status.CASUALTY)
+                ? FXCollections.observableArrayList(Status.FIT, Status.CASUALTY)
                 : FXCollections.observableArrayList(Status.values());
 
         return new TableCell<Personnel, String>() {
             private final ComboBox<Status> combo = new ComboBox<>(options);
+            private boolean isUpdating = false;
+
             {
                 styleStatusCombo(combo);
+
+                combo.setButtonCell(combo.getCellFactory().call(null));
+
                 combo.setOnAction(e -> {
+                    if (isUpdating) return;
+
                     Personnel p = getTableRow().getItem();
-                    if (p == null || combo.getValue() == null)
-                        return;
+                    if (p == null || combo.getValue() == null) return;
+
+                    if (p.getStatus() == combo.getValue()) return;
+
                     int idx = model.getFilteredPersonnelList(null).indexOf(p) + 1;
                     try {
                         new UpdateStatusCommand(idx, combo.getValue()).execute(model);
-                        setFeedback(" for " + p.getName() + ".", false);
+                        setFeedback("Status updated for " + p.getName() + ".", false);
                         saveData();
                         refresh();
                     } catch (CommandException ex) {
@@ -500,13 +512,16 @@ public class PersonnelScreen extends VBox {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow().getItem() == null) {
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                     setStyle("");
                 } else {
                     Status current = getTableRow().getItem().getStatus();
+
+                    isUpdating = true;
                     combo.setValue(current);
-                    refreshComboButtonCell(combo, current);
+                    isUpdating = false;
+
                     setGraphic(combo);
                     setStyle("-fx-background-color: transparent;");
                 }
@@ -599,14 +614,14 @@ public class PersonnelScreen extends VBox {
 
     private void updatePage() {
         int from = currentPage * PAGE_SIZE;
-        int size = filteredData.size();
+        int size = sortedData.size();
         int to = Math.min(from + PAGE_SIZE, size);
-        pageItems.setAll(from < size ? filteredData.subList(from, to) : List.of());
+        pageItems.setAll(from < size ? sortedData.subList(from, to) : List.of());
         updatePaginationControls();
     }
 
     private void updatePaginationControls() {
-        int totalPages = Math.max(1, (int) Math.ceil((double) filteredData.size() / PAGE_SIZE));
+        int totalPages = Math.max(1, (int) Math.ceil((double) sortedData.size() / PAGE_SIZE));
         if (pageLabel != null)
             pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
         if (prevBtn != null)
@@ -754,11 +769,6 @@ public class PersonnelScreen extends VBox {
                 });
             }
         });
-    }
-
-    private void refreshComboButtonCell(ComboBox<Status> combo, Status current) {
-        combo.setButtonCell(combo.getCellFactory().call(null));
-        combo.setValue(current);
     }
 
     private Label statLabel(String text, String color) {
