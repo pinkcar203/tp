@@ -22,7 +22,6 @@ public enum Role {
     }
 
     /**
-     * Retrieves the UI-friendly display name of the role.
      * Overrides the default uppercase enum string formatting.
      *
      * @return The formatted display name string.

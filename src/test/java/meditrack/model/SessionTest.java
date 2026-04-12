@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * JUnit tests for the Session POJO class.
+ * Tests for the Session POJO class.
  * Validates that role state persists correctly without relying on global Singletons.
  */
 public class SessionTest {

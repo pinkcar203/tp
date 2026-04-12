@@ -15,7 +15,7 @@ import meditrack.model.ModelManager;
 import meditrack.model.Supply;
 
 /**
- * JUnit tests for the Parser component.
+ * Tests for the Parser component.
  * Verifies that user input parameters are correctly validated before generating commands.
  */
 class ParserTest {

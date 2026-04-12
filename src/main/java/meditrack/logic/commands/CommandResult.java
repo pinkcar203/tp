@@ -30,7 +30,6 @@ public class CommandResult {
 
     /**
      * Checks equality based on the feedback string.
-     * Useful for writing robust JUnit tests.
      */
     @Override
     public boolean equals(Object other) {

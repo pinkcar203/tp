@@ -18,7 +18,7 @@ import meditrack.model.Role;
 import meditrack.model.Supply;
 
 /**
- * JUnit tests for supply-related commands.
+ * Tests for supply-related commands.
  * Verifies execution logic, state changes in the model, and Role-Based Access Control (RBAC).
  */
 class SupplyCommandsTest {

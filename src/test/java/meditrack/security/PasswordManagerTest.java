@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * JUnit tests for the PasswordManager, ensuring cryptographic hashing and verification function correctly.
+ * Tests for the PasswordManager, ensuring cryptographic hashing and verification function correctly.
  */
 public class PasswordManagerTest {
 

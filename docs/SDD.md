@@ -27,14 +27,14 @@ MediTrack uses a heavily decoupled, layered architecture split into four main la
 
 | Layer   | Responsibility                                                                                                                                  |
 |---------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| UI      | Renders the interface, captures user actions, and displays results. Does not interacts directly with Storage.                                   |
+| UI      | Renders the interface, captures user actions, and displays results. Does not interact directly with Storage.                                   |
 | Logic   | Acts as the central coordinator. Receives commands from the UI, executes them against the Model, and automatically triggers Storage auto-saves. |
 | Model   | Holds the in-memory state of the session, Supply, and Personnel records. Exposes an abstract interface to the UI.                               |
 | Storage | Reads from and writes to `data.json`. Isolated from the UI layer entirely.                                                                      |
 
 ### 2.2 Authentication Layer
 
-There is a lightweight authentication layer that runs before the main UI loads. On every launch, a login screen presents a role dropdown and a password field. The entered password is checked against the BCrypt hash stored for that role using `PasswordManager.checkPassword()`. On success, the selected role is written into the in-memory `Session` managed securely within the `Model`, and the main application screen loads.
+There is a lightweight authentication layer that runs before the main UI loads. On every launch, a login screen presents a role dropdown and a password field. Each role uses a fixed demo password (see PRD); at runtime `LoginScreen` holds BCrypt hashes produced via `PasswordManager.hashPassword(...)` and verifies input with `PasswordManager.checkPassword()`. Credentials are **not** read from `data.json`. On success, the selected role is written into the in-memory `Session` managed within the `Model`, and the main application screen loads.
 
 ### 2.3 Parser Role in a GUI Context
 
@@ -49,8 +49,7 @@ The Parser's job is purely **validation**. It checks that the values collected f
 Built entirely in JavaFX. The UI relies heavily on modular builder methods to prevent massive, bloated classes. Crucially, the UI talks to the backend through abstract interfaces (`Logic.executeCommand(Command)` and `Model`). It has zero direct coupling to the `Storage` layer or concrete `ModelManager` classes.
 
 **Pre-login screens**
-- First Launch Setup: shown once when no `data.json` exists and lets the user set a password
-- Login Screen: password field, role dropdown, login button
+- Login Screen: password field, role dropdown, login button (shown on every launch; if `data.json` is missing the app still starts here with an empty in-memory dataset)
 
 **Field Medic screens**
 - Inventory: full supply table with add, edit, and delete actions

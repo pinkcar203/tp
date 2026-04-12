@@ -6,9 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * JUnit tests for the Index utility, verifying boundary limits and conversion math.
+/*
+ * Equivalence Partitions:
+ *
+ *  fromZeroBased(int) 
+ * Parameter: zeroBasedIndex
+ *   Valid:   0 (boundary), positive integer
+ *   Invalid: negative (-1)
+ *
+ *  fromOneBased(int) 
+ * Parameter: oneBasedIndex
+ *   Valid:   1 (boundary), positive integer
+ *   Invalid: 0
+ *
+ * equals(Object) 
+ *   Same instance, same value, different value, null, non-Index object
  */
+
+
 public class IndexTest {
 
     @Test
@@ -54,5 +69,62 @@ public class IndexTest {
     public void toString_returnsOneBasedString() {
         Index index = Index.fromZeroBased(0);
         assertEquals("1", index.toString());
+    }
+
+    @Test
+    void test_equals_sameInstance_returnsTrue() {
+        // Arrange
+        Index index = Index.fromZeroBased(3);
+
+        // Act & Assert
+        assertEquals(index, index);
+    }
+
+    @Test
+    void test_equals_nullObject_returnsFalse() {
+        // Arrange
+        Index index = Index.fromZeroBased(3);
+
+        // Act & Assert
+        assertNotEquals(null, index);
+    }
+
+    @Test
+    void test_equals_nonIndexObject_returnsFalse() {
+        // Arrange
+        Index index = Index.fromZeroBased(3);
+        String notIndex = "3";
+
+        // Act & Assert
+        assertNotEquals(index, notIndex);
+    }
+
+    @Test
+    void test_fromZeroBased_zero_validBoundary() {
+        // Arrange & Act
+        Index index = Index.fromZeroBased(0);
+
+        // Assert
+        assertEquals(0, index.getZeroBased());
+        assertEquals(1, index.getOneBased());
+    }
+
+    @Test
+    void test_fromOneBased_one_validBoundary() {
+        // Arrange & Act
+        Index index = Index.fromOneBased(1);
+
+        // Assert
+        assertEquals(0, index.getZeroBased());
+        assertEquals(1, index.getOneBased());
+    }
+
+    @Test
+    void test_toString_largeIndex_returnsCorrectOneBasedString() {
+        // Arrange
+        Index index = Index.fromZeroBased(99);
+
+        // Act & Assert
+        assertEquals("100", index.toString());
     }
 }

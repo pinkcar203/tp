@@ -6,9 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * JUnit tests for CommandResult equality and instantiation.
- */
+
+
 public class CommandResultTest {
 
     @Test
@@ -37,5 +36,43 @@ public class CommandResultTest {
         CommandResult r2 = new CommandResult("Message B");
 
         assertNotEquals(r1, r2);
+    }
+
+    @Test
+    void test_equals_sameInstance_returnsTrue() {
+        // Arrange
+        CommandResult result = new CommandResult("test");
+
+        // Act & Assert
+        assertEquals(result, result);
+    }
+
+    @Test
+    void test_equals_nullObject_returnsFalse() {
+        // Arrange
+        CommandResult result = new CommandResult("test");
+
+        // Act & Assert
+        assertNotEquals(null, result);
+    }
+
+    @Test
+    void test_equals_nonCommandResultObject_returnsFalse() {
+        // Arrange
+        CommandResult result = new CommandResult("test");
+        String notCommandResult = "test";
+
+        // Act & Assert
+        assertNotEquals(result, notCommandResult);
+    }
+
+    @Test
+    void test_hashCode_sameMessage_sameHash() {
+        // Arrange
+        CommandResult r1 = new CommandResult("identical");
+        CommandResult r2 = new CommandResult("identical");
+
+        // Act & Assert
+        assertEquals(r1.hashCode(), r2.hashCode());
     }
 }

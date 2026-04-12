@@ -14,7 +14,7 @@ import meditrack.logic.RosterAutoGenerator.GenerateResult;
 import meditrack.model.DutyType;
 
 /**
- * JUnit tests for RosterAutoGenerator, ensuring fairness algorithms and gap constraints function properly.
+ * Tests for RosterAutoGenerator, ensuring fairness algorithms and gap constraints function properly.
  */
 public class RosterAutoGeneratorTest {
 

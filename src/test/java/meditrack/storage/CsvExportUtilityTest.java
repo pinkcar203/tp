@@ -22,7 +22,7 @@ import meditrack.model.Status;
 import meditrack.model.Supply;
 
 /**
- * JUnit tests for the CsvExportUtility.
+ * Tests for the CsvExportUtility.
  * Verifies that the correct data is exported based on the user's Role-Based Access Control (RBAC) permissions.
  */
 public class CsvExportUtilityTest {

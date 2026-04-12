@@ -15,7 +15,7 @@ import meditrack.model.Role;
 import meditrack.model.Status;
 
 /**
- * JUnit tests for RemovePersonnelCommand, verifying list bounds checking and execution.
+ * Tests for RemovePersonnelCommand, verifying list bounds checking and execution.
  */
 public class RemovePersonnelCommandTest {
 
@@ -55,8 +55,8 @@ public class RemovePersonnelCommandTest {
     }
 
     @Test
-    public void getRequiredRoles_isMedicalOfficerOnly() {
+    public void getRequiredRoles_includesMedicalOfficerAndPlatoonCommander() {
         RemovePersonnelCommand cmd = new RemovePersonnelCommand(1);
-        assertEquals(List.of(Role.MEDICAL_OFFICER), cmd.getRequiredRoles());
+        assertEquals(List.of(Role.MEDICAL_OFFICER, Role.PLATOON_COMMANDER), cmd.getRequiredRoles());
     }
 }

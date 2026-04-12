@@ -24,8 +24,7 @@ public class CsvExportUtility {
 
     /**
      * Exports the application data to a CSV file in the default "exports" directory.
-     * What data gets exported is strictly determined by the user's security clearance.
-     *
+     * 
      * @param data        The current read-only state of the application data.
      * @param currentRole The role of the user requesting the export.
      * @return The file path where the CSV was saved.
@@ -38,7 +37,6 @@ public class CsvExportUtility {
 
     /**
      * Exports the application data to a specific directory.
-     * This overloaded method supports Dependency Injection for safe, isolated unit testing.
      *
      * @param data        The current read-only state of the application data.
      * @param currentRole The role of the user requesting the export.
@@ -58,7 +56,7 @@ public class CsvExportUtility {
 
         try (FileWriter writer = new FileWriter(filePath.toFile())) {
 
-            // --- Export Personnel Roster (MO, PC, and Field Medic ONLY) ---
+            // - Export Personnel Roster (MO, PC, and Field Medic ONLY) -
             if (currentRole == Role.MEDICAL_OFFICER || currentRole == Role.FIELD_MEDIC || currentRole == Role.PLATOON_COMMANDER) {
                 writer.append("=== PERSONNEL ROSTER ===\n");
                 writer.append("Name,Status,Action Required\n");
@@ -74,7 +72,7 @@ public class CsvExportUtility {
                 writer.append("\n");
             }
 
-            // --- Export Duty Roster (Platoon Commander ONLY) ---
+            // - Export Duty Roster (Platoon Commander ONLY) -
             if (currentRole == Role.PLATOON_COMMANDER) {
                 writer.append("=== DUTY ROSTER ===\n");
                 writer.append("Time Slot,Duty Type,Personnel\n");
@@ -88,7 +86,7 @@ public class CsvExportUtility {
                 writer.append("\n");
             }
 
-            // --- Export Supply Inventory (Logistics Officer and Field Medic ONLY) ---
+            // - Export Supply Inventory (Logistics Officer and Field Medic ONLY) -
             if (currentRole == Role.LOGISTICS_OFFICER || currentRole == Role.FIELD_MEDIC) {
                 writer.append("=== SUPPLY INVENTORY ===\n");
                 writer.append("Item Name,Quantity,Expiry Date,Action Required\n");

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import javafx.collections.ObservableList;
 
 /**
- * JUnit tests for the root MediTrack container, verifying list operations and immutability views.
+ * Tests for the root MediTrack container, verifying list operations and immutability views.
  */
 public class MediTrackTest {
 

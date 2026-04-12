@@ -28,9 +28,6 @@ public enum BloodGroup {
 
     /**
      * Parses a string representation into the corresponding BloodGroup enum.
-     * Supports matching against both the human-readable display label (e.g., "O+")
-     * and the raw enum name (e.g., "O_POS").
-     *
      * @param s The string to parse.
      * @return The matching BloodGroup, or UNKNOWN if the input is null, blank, or unrecognized.
      */

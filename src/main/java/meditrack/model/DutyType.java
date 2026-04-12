@@ -24,7 +24,6 @@ public enum DutyType {
 
     /**
      * Retrieves the UI-friendly display name of the duty.
-     * Overrides the default uppercase enum formatting.
      *
      * @return The formatted display name string.
      */

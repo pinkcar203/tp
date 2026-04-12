@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
- * JUnit tests for the Role enum, verifying UI display name formatting.
+ * Tests for the Role enum, verifying UI display name formatting.
  */
 public class RoleTest {
 

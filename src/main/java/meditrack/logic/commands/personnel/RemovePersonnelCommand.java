@@ -12,7 +12,7 @@ import meditrack.model.Role;
 
 /**
  * Removes a personnel member from the roster using their displayed 1-based index.
- * This operation is strictly reserved for Medical Officers.
+ * Permitted for Medical Officers and Platoon Commanders.
  */
 public class RemovePersonnelCommand extends Command {
 
@@ -52,11 +52,11 @@ public class RemovePersonnelCommand extends Command {
     /**
      * Retrieves the list of roles authorized to execute this command.
      *
-     * @return A list containing only Role.MEDICAL_OFFICER.
+     * @return Medical Officers and Platoon Commanders.
      */
     @Override
     public List<Role> getRequiredRoles() {
-        return List.of(Role.MEDICAL_OFFICER);
+        return List.of(Role.MEDICAL_OFFICER, Role.PLATOON_COMMANDER);
     }
 
     /**

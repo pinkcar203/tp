@@ -2,7 +2,6 @@ package meditrack.model;
 
 /**
  * Manages the active user session within the application.
- * Note: Refactored away from the Singleton pattern to improve testability and reduce hidden global state.
  */
 public class Session {
 
