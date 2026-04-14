@@ -1,14 +1,11 @@
 package meditrack.ui.screen;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Comparator;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -352,7 +349,7 @@ public class LowSupplyScreen extends VBox {
                 + " -fx-cursor: hand; -fx-background-radius: 0; -fx-pref-height: 28; -fx-padding: 0 12 0 12;";
         String hover = "-fx-background-color: rgba(85,107,47,0.6); -fx-text-fill: white;"
                 + " -fx-font-size: 10px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
-                + " -fx-cursor: hand; -fx-background-radius: 0; -fx-pref-height: 28; -fx-padding: 0 12 0 12;";
+                + " -fx-cursor: hand; -background-radius: 0; -fx-pref-height: 28; -fx-padding: 0 12 0 12;";
         Button btn = new Button(text);
         btn.setStyle(base);
         btn.setOnMouseEntered(ev -> btn.setStyle(hover));
@@ -378,12 +375,12 @@ public class LowSupplyScreen extends VBox {
         long critical  = items.stream().filter(this::isCritical).count();
         long standardLow = items.size() - critical;
         if (countLabel != null) countLabel.setText("LOW STOCK: " + standardLow);
-        if (criticalLabel != null) criticalLabel.setText("CRITICAL (<5): " + critical);
+        if (criticalLabel != null) criticalLabel.setText("CRITICAL: " + critical);
     }
 
-    /** Checks if a supply is critically low (below 5). */
+    /** Checks if a supply is critically low (below 10). */
     private boolean isCritical(Supply s) {
-        return s.getQuantity() < 5;
+        return s.getQuantity() < 10;
     }
 
     /** Generates the placeholder label shown when the table is empty. */

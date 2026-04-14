@@ -150,6 +150,7 @@ public class MainAppScreen extends HBox {
                 break;
             case INVENTORY:
                 if (inventoryScreen == null) inventoryScreen = new InventoryScreen(model, logic);
+                inventoryScreen.refresh(); // <-- New!
                 switchContent(inventoryScreen);
                 break;
             case LOW_SUPPLY:
@@ -164,6 +165,7 @@ public class MainAppScreen extends HBox {
                 break;
             case SUPPLY_LEVELS:
                 if (supplyLevelsScreen == null) supplyLevelsScreen = new SupplyLevelsScreen(model);
+                supplyLevelsScreen.refresh(); // <-- New!
                 switchContent(supplyLevelsScreen);
                 break;
             case RESUPPLY_REPORT:

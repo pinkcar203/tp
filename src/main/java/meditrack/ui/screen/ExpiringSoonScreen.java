@@ -360,13 +360,17 @@ public class ExpiringSoonScreen extends VBox {
 
     /**
      * Refreshes the screen's data directly from the abstract model.
-     * Guaranteed to use the live system clock.
+     * Guaranteed to use the live system clock and catch ALREADY EXPIRED items.
      */
     public void refresh() {
-        List<Supply> expiring = model.getExpiringSupplies(Constants.EXPIRY_THRESHOLD_DAYS);
+        LocalDate thresholdDate = LocalDate.now().plusDays(Constants.EXPIRY_THRESHOLD_DAYS);
 
-        expiring.sort(Comparator.comparing((Supply s) -> s.getName().toLowerCase())
-                .thenComparing(Supply::getExpiryDate));
+        // Filter the main list manually to bypass backend exclusions of expired items
+        List<Supply> expiring = model.getFilteredSupplyList().stream()
+                .filter(s -> !s.getExpiryDate().isAfter(thresholdDate))
+                .sorted(Comparator.comparing((Supply s) -> s.getName().toLowerCase())
+                        .thenComparing(Supply::getExpiryDate))
+                .toList();
 
         tableItems.setAll(expiring);
         updateFooterStats(expiring);
