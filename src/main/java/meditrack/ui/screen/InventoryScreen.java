@@ -82,6 +82,7 @@ public class InventoryScreen extends VBox {
     }
 
     /** Assembles the core layout and binds observable list listeners. */
+    @SuppressWarnings("unchecked")
     private void buildUi() {
         setSpacing(0);
         setStyle("-fx-background-color: " + BG + ";");
@@ -90,9 +91,14 @@ public class InventoryScreen extends VBox {
         filtered = new FilteredList<>(model.getFilteredSupplyList(), p -> true);
         sorted = new SortedList<>(filtered, Comparator.comparing((Supply s) -> s.getName().toLowerCase())
                 .thenComparing(Supply::getExpiryDate));
+
+        // Guaranteed listener: Updates both table pagination AND footer stats synchronously
         sorted.addListener((javafx.collections.ListChangeListener<Supply>) c -> {
-            currentPage = 0;
-            updatePage();
+            Platform.runLater(() -> {
+                currentPage = 0;
+                updatePage();
+                updateFooterStats();
+            });
         });
 
         HBox header = buildHeader();
@@ -102,8 +108,6 @@ public class InventoryScreen extends VBox {
         VBox.setVgrow(tableSection, Priority.ALWAYS);
         getChildren().addAll(header, tableSection, footer);
 
-        model.getFilteredSupplyList().addListener(
-                (javafx.collections.ListChangeListener<Supply>) c -> updateFooterStats());
         updateFooterStats();
         updatePage();
     }
@@ -488,14 +492,25 @@ public class InventoryScreen extends VBox {
         return lbl;
     }
 
-    /** Refreshes summary labels using data from the Model. */
+    /** Refreshes summary labels using live data from the Model. */
     private void updateFooterStats() {
         int total = model.getFilteredSupplyList().size();
-        int lowStock = model.getLowStockSupplies(50).size();
         int critical = model.getLowStockSupplies(10).size();
+
+        // Subtract critical items so they aren't double-counted in Low Stock
+        int lowStock = model.getLowStockSupplies(50).size() - critical;
+
         if (totalLabel != null) totalLabel.setText("TOTAL ITEMS: " + total);
         if (lowStockLabel != null) lowStockLabel.setText("LOW STOCK: " + lowStock);
         if (criticalLabel != null) criticalLabel.setText("CRITICAL: " + critical);
+    }
+
+    /** Reloads the screen data safely on the UI thread. */
+    public void refresh() {
+        Platform.runLater(() -> {
+            updateFooterStats();
+            updatePage();
+        });
     }
 
     /** Categorizes supply health based on quantity and expiration. */

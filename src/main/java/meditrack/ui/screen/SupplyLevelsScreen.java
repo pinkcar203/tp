@@ -38,7 +38,7 @@ public class SupplyLevelsScreen extends VBox {
     private static final String SURFACE_HIGHEST = "#333531";
     private static final String SURFACE_BRIGHT  = "#383a35";
     private static final String PRIMARY         = "#b6d088";
-    private static final String PRIMARY_CONT    = "#556b2f"; // Added missing constant
+    private static final String PRIMARY_CONT    = "#556b2f";
     private static final String OUTLINE         = "#8f9284";
     private static final String OUTLINE_VAR     = "#45483c";
     private static final String ON_SURFACE      = "#e3e3dc";
@@ -84,9 +84,14 @@ public class SupplyLevelsScreen extends VBox {
         sorted = new SortedList<>(filtered, Comparator.comparing((Supply s) -> s.getName().toLowerCase())
                 .thenComparingInt(SupplyLevelsScreen::getSeverityPriority)
                 .thenComparing(Supply::getExpiryDate));
+
+        // Guaranteed listener: Updates both table pagination AND footer stats synchronously
         sorted.addListener((javafx.collections.ListChangeListener<Supply>) c -> {
-            currentPage = 0;
-            updatePage();
+            Platform.runLater(() -> {
+                currentPage = 0;
+                updatePage();
+                updateFooterStats();
+            });
         });
 
         VBox tableSection = buildTableSection();
@@ -94,8 +99,6 @@ public class SupplyLevelsScreen extends VBox {
 
         getChildren().addAll(buildHeader(), tableSection, buildFooter());
 
-        model.getFilteredSupplyList().addListener(
-                (javafx.collections.ListChangeListener<Supply>) c -> updateFooterStats());
         updateFooterStats();
         updatePage();
     }
@@ -375,9 +378,12 @@ public class SupplyLevelsScreen extends VBox {
     /** Updates the UI state of pagination buttons and labels. */
     private void updatePaginationControls() {
         int totalPages = Math.max(1, (int) Math.ceil((double) sorted.size() / PAGE_SIZE));
-        if (pageLabel != null) pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
-        if (prevBtn != null) prevBtn.setDisable(currentPage == 0);
-        if (nextBtn != null) nextBtn.setDisable(currentPage >= totalPages - 1);
+        if (pageLabel != null)
+            pageLabel.setText("PAGE " + (currentPage + 1) + " / " + totalPages);
+        if (prevBtn != null)
+            prevBtn.setDisable(currentPage == 0);
+        if (nextBtn != null)
+            nextBtn.setDisable(currentPage >= totalPages - 1);
     }
 
     /** Creates a styled button for pagination navigation. */
@@ -406,11 +412,22 @@ public class SupplyLevelsScreen extends VBox {
     /** Refreshes summary labels using live data from the Model. */
     private void updateFooterStats() {
         int total = model.getFilteredSupplyList().size();
-        int lowStock = model.getLowStockSupplies(50).size();
         int critical = model.getLowStockSupplies(10).size();
+
+        // Subtract critical items so they aren't double-counted in Low Stock
+        int lowStock = model.getLowStockSupplies(50).size() - critical;
+
         if (totalLabel != null) totalLabel.setText("TOTAL ITEMS: " + total);
         if (lowStockLabel != null) lowStockLabel.setText("LOW STOCK: " + lowStock);
         if (criticalLabel != null) criticalLabel.setText("CRITICAL: " + critical);
+    }
+
+    /** Reloads the screen data safely on the UI thread. */
+    public void refresh() {
+        Platform.runLater(() -> {
+            updateFooterStats();
+            updatePage();
+        });
     }
 
     /** Ranks supply severity to enable priority sorting. 1 = Worst, 5 = Best */

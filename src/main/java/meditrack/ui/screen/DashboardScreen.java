@@ -1,5 +1,6 @@
 package meditrack.ui.screen;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -96,7 +97,7 @@ public class DashboardScreen extends VBox {
         return bar;
     }
 
-    /** Instantiates the grid container for the four critical statistics cards. */
+    /** Instantiates the grid container for the statistics cards. */
     private HBox buildStatRow() {
         HBox row = new HBox(1);
         row.setStyle("-fx-background-color: " + BORDER + ";");
@@ -107,15 +108,23 @@ public class DashboardScreen extends VBox {
         statGrid.setHgap(1);
         statGrid.setVgap(0);
         statGrid.setPrefHeight(110);
-        for (int i = 0; i < 4; i++) {
-            ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth(25);
-            cc.setHgrow(Priority.ALWAYS);
-            statGrid.getColumnConstraints().add(cc);
-        }
+
         HBox.setHgrow(statGrid, Priority.ALWAYS);
         row.getChildren().add(statGrid);
         return row;
+    }
+
+    /** * Dynamically configures the grid columns so that the stat cards are evenly distributed.
+     * * @param numColumns The number of stat cards to display.
+     */
+    private void configureStatGridColumns(int numColumns) {
+        statGrid.getColumnConstraints().clear();
+        for (int i = 0; i < numColumns; i++) {
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setPercentWidth(100.0 / numColumns);
+            cc.setHgrow(Priority.ALWAYS);
+            statGrid.getColumnConstraints().add(cc);
+        }
     }
 
     /** Instantiates the container for the lower activity feed. */
@@ -145,22 +154,28 @@ public class DashboardScreen extends VBox {
 
     /** Populates dashboard specific to Field Medics. */
     private void refreshFieldMedic() {
+        configureStatGridColumns(5); // Dynamic layout for 5 cards!
+
         List<Supply> supplies = model.getFilteredSupplyList();
         int totalSupplies = supplies.size();
-        int lowStock = model.getLowStockSupplies(50).size();
-        int expiringSoon = model.getExpiringSupplies(30).size();
+        int critical = model.getLowStockSupplies(10).size();
+        int lowStock = model.getLowStockSupplies(50).size() - critical;
+        int expiringSoon = getExpiringAndExpired(30).size();
         int totalPersonnel = model.getPersonnelList().size();
 
         addStatCard(0, "TOTAL SUPPLIES", String.valueOf(totalSupplies), OLIVE_PALE, null);
-        addStatCard(1, "LOW STOCK (<10)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
+        addStatCard(1, "LOW STOCK (<50)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
         addStatCard(2, "EXPIRING SOON", String.valueOf(expiringSoon), expiringSoon > 0 ? WARNING : OLIVE_LIGHT, expiringSoon > 0 ? WARNING : null);
-        addStatCard(3, "TOTAL PERSONNEL", String.valueOf(totalPersonnel), OLIVE_PALE, null);
+        addStatCard(3, "CRITICAL (<10)", String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT, critical > 0 ? ERROR : null);
+        addStatCard(4, "TOTAL PERSONNEL", String.valueOf(totalPersonnel), OLIVE_PALE, null);
 
         buildSupplyAlertActivity();
     }
 
     /** Populates dashboard specific to Medical Officers. */
     private void refreshMedicalOfficer() {
+        configureStatGridColumns(4);
+
         int fit = count(Status.FIT);
         int mc = count(Status.MC);
         int lightDuty = count(Status.LIGHT_DUTY);
@@ -176,6 +191,8 @@ public class DashboardScreen extends VBox {
 
     /** Populates dashboard specific to Platoon Commanders. */
     private void refreshPlatoonCommander() {
+        configureStatGridColumns(4);
+
         int total = model.getPersonnelList().size();
         int fit = count(Status.FIT);
         int nonDeploy = count(Status.MC) + count(Status.LIGHT_DUTY) + count(Status.CASUALTY);
@@ -183,7 +200,6 @@ public class DashboardScreen extends VBox {
 
         String fitPct = total == 0 ? "N/A" : (fit * 100 / total) + "%";
         addStatCard(0, "TOTAL STRENGTH", String.valueOf(total), OLIVE_PALE, null);
-        // Fixed unnecessary String.valueOf
         addStatCard(1, "FIT / DEPLOYABLE", fit + "  (" + fitPct + ")", OLIVE_PALE, null);
         addStatCard(2, "NON-DEPLOYABLE", String.valueOf(nonDeploy), nonDeploy > 0 ? WARNING : OLIVE_LIGHT, nonDeploy > 0 ? WARNING : null);
         addStatCard(3, "PENDING ASSESS", String.valueOf(pending), TEXT_DIM, null);
@@ -193,10 +209,12 @@ public class DashboardScreen extends VBox {
 
     /** Populates dashboard specific to Logistics Officers. */
     private void refreshLogisticsOfficer() {
+        configureStatGridColumns(4);
+
         int total = model.getFilteredSupplyList().size();
-        int lowStock = model.getLowStockSupplies(50).size();
-        int expiringSoon = model.getExpiringSupplies(30).size();
         int critical = model.getLowStockSupplies(10).size();
+        int lowStock = model.getLowStockSupplies(50).size() - critical;
+        int expiringSoon = getExpiringAndExpired(30).size();
 
         addStatCard(0, "TOTAL SUPPLIES", String.valueOf(total), OLIVE_PALE, null);
         addStatCard(1, "LOW STOCK (<50)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
@@ -209,7 +227,7 @@ public class DashboardScreen extends VBox {
     /**
      * Creates and adds a stat card to the top grid.
      *
-     * @param col         Grid column (0-3).
+     * @param col         Grid column index.
      * @param label       Uppercase label text below the value.
      * @param value       The numeric/text value to display large.
      * @param valueColor  JavaFX hex color for the value text.
@@ -249,7 +267,7 @@ public class DashboardScreen extends VBox {
         activityPane.getChildren().add(buildSectionHeader("SUPPLY ALERT SUMMARY", "ITEMS REQUIRING ATTENTION"));
 
         List<Supply> lowStock = model.getLowStockSupplies(50);
-        List<Supply> expiringSoon = model.getExpiringSupplies(30);
+        List<Supply> expiringSoon = getExpiringAndExpired(30);
 
         if (lowStock.isEmpty() && expiringSoon.isEmpty()) {
             activityPane.getChildren().add(buildEmptyState("ALL SUPPLY LEVELS NORMAL"));
@@ -424,5 +442,13 @@ public class DashboardScreen extends VBox {
         return (int) model.getPersonnelList().stream()
                 .filter(p -> p.getStatus() == status)
                 .count();
+    }
+
+    /** Helper to grab both expiring AND already expired items for accurate metrics. */
+    private List<Supply> getExpiringAndExpired(int daysThreshold) {
+        LocalDate threshold = LocalDate.now().plusDays(daysThreshold);
+        return model.getFilteredSupplyList().stream()
+                .filter(s -> !s.getExpiryDate().isAfter(threshold))
+                .toList();
     }
 }
