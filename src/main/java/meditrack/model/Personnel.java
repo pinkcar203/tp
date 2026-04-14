@@ -51,6 +51,31 @@ public class Personnel {
     }
 
     /**
+     * Constructs a comprehensive Personnel record used for editing or duplicating an existing entry.
+     * This constructor retains historical tracking data such as the expiry date and modification timestamp.
+     *
+     * @param name             The display name of the personnel. Must not be null or blank.
+     * @param status           The current medical readiness status. Must not be null.
+     * @param bloodGroup       The blood group of the personnel, or null if unknown.
+     * @param allergies        Known allergies, or null/empty if none.
+     * @param statusExpiryDate The date the current medical status expires, or null if indefinite.
+     * @param lastModified     The timestamp of when this record was last modified.
+     */
+    public Personnel(String name, Status status, BloodGroup bloodGroup, String allergies,
+                     LocalDate statusExpiryDate, LocalDateTime lastModified) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Personnel name must not be blank.");
+        }
+        Objects.requireNonNull(status, "Status must not be null.");
+        this.name = name.trim();
+        this.status = status;
+        this.bloodGroup = bloodGroup;
+        this.allergies = (allergies == null) ? "" : allergies.trim();
+        this.statusExpiryDate = statusExpiryDate;
+        this.lastModified = lastModified;
+    }
+
+    /**
      * Retrieves the personnel's name.
      *
      * @return The trimmed name string.

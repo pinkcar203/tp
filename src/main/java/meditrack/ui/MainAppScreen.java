@@ -164,8 +164,8 @@ public class MainAppScreen extends HBox {
                 switchContent(expiringSoonScreen);
                 break;
             case SUPPLY_LEVELS:
-                if (supplyLevelsScreen == null) supplyLevelsScreen = new SupplyLevelsScreen(model);
-                supplyLevelsScreen.refresh(); // <-- New!
+                if (supplyLevelsScreen == null) supplyLevelsScreen = new SupplyLevelsScreen(model, logic);
+                supplyLevelsScreen.refresh();
                 switchContent(supplyLevelsScreen);
                 break;
             case RESUPPLY_REPORT:

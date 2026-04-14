@@ -1,5 +1,7 @@
 # MediTrack User Guide
 
+![MediTrack Dashboard](images/MediTrack_screenshot.png)
+
 ## Table of Contents
 1. [Introduction](#1-introduction)
 2. [Quick Start](#2-quick-start)
@@ -27,7 +29,10 @@ Designed for high-pressure environments, MediTrack operates completely offline a
 1. Ensure you have **Java 17** or above installed on your computer.
 2. Download the latest `MediTrack.jar` from the releases page.
 3. Copy the file to an empty folder where you want to store your operational data.
-4. Double-click the file, or open a command terminal, navigate to the folder, and run the command:`java -jar MediTrack.jar`
+4. Open a command terminal, navigate to the folder containing the file, and run the following command:
+   ```bash
+   java -jar MediTrack.jar
+   ```
 5. You will see the MediTrack Terminal login screen. 
 
 ---
@@ -38,12 +43,12 @@ MediTrack uses Role-Based Access Control. Upon launching the application, you mu
 
 For demonstration and evaluation purposes, the following credentials are hardcoded into the system:
 
-| **Operational**       | **RoleAccess Key (Password)** | **Primary Responsibility**                                                 |
-|-----------------------|-------------------------------|----------------------------------------------------------------------------|
-| **FIELD MEDIC**       | `fm123`                       | Managing physical supply inventory and reporting field casualties.         |
-| **MEDICAL OFFICER**   | `mo123`                       | Assessing personnel and assigning medical statuses (e.g., MC, Light Duty). |
-| **PLATOON COMMANDER** | `pc123`                       | Managing unit manpower and scheduling duty rosters.                        |
-| **LOGISTICS OFFICER** | `lo123`                       | Auditing supply levels and generating resupply reports.                    |
+| Operational Role      | Access Key (Password) | Primary Responsibility                                                     |
+|-----------------------|-----------------------|----------------------------------------------------------------------------|
+| **FIELD MEDIC** | `fm123`               | Managing physical supply inventory and reporting field casualties.         |
+| **MEDICAL OFFICER** | `mo123`               | Assessing personnel and assigning medical statuses (e.g., MC, Light Duty). |
+| **PLATOON COMMANDER** | `pc123`               | Managing unit manpower and scheduling duty rosters.                        |
+| **LOGISTICS OFFICER** | `lo123`               | Auditing supply levels and generating resupply reports.                    |
 
 **Note:** The system stores these securely as BCrypt hashes. Sessions are automatically destroyed upon clicking "Logout" or closing the application.
 
@@ -67,19 +72,34 @@ The Field Medic is the primary operator for physical inventory and front-line tr
 
 Navigate to **INVENTORY** via the sidebar.
 
+![Add Supply](images/add_supply.png)
+
 - **Add Supply:** Click `+ ADD`. Enter the Nomenclature (name), Quantity, and Expiry Date (`YYYY-MM-DD`).
 - **Edit Supply:** Click the `✎` (Edit) button on any row to update its quantity or expiry date.
 - **Delete Supply:** Click the `✕` (Delete) button to permanently remove a consumed or ruined supply item.
 
-### 5.2 Monitoring Expirations
+### 5.2 Monitoring Low Supplies
+
+Navigate to **LOW SUPPLY** via the sidebar.
+
+![Low Supply](images/low_supply.png)
+
+- This screen automatically filters the inventory to display only items that have fallen below the **50-unit threshold**.
+- Items are visually categorized by severity to help prioritize restocking: **LOW STOCK** (yellow) for items under 50 units, and **CRITICAL** (red) for severely depleted items under 10 units.
+
+### 5.3 Monitoring Expirations
 
 Navigate to **EXPIRING SOON**.
 
+![Expiring Soon](images/expiring_soon.png)
+
 - This screen automatically filters the inventory to display only items expiring within the next **30 days**. Items that have already expired are highlighted in critical red.
 
-### 5.3 Reporting Field Casualties
+### 5.4 Reporting Field Casualties
 
 Navigate to **PERSONNEL**.
+
+![Personnel](images/personnel_fm.png)
 
 - Field Medics have a restricted view of the roster (FIT and CASUALTY only).
 - To flag a soldier who has fallen ill outfield, click the inline dropdown under the **STATUS** column and change it from `FIT` to `CASUALTY`. This immediately alerts the Medical Officer.
@@ -94,13 +114,18 @@ The Medical Officer has absolute authority over the medical readiness and profil
 
 Navigate to **PERSONNEL**.
 
+![Personnel](images/personnel_mo.png)
+
 - **Add Personnel:** Click `+ ADD`. MOs can assign any initial status and input highly specific medical details, including `Blood Group` and `Allergies`.
+- **Edit Medical Details:** Click the `✎` (Edit) button on any personnel row to update their Blood Group and Allergies.
 - **Update Status:** Use the inline dropdown to change a soldier's status.
     - If changing to `MC` or `LIGHT DUTY`, a prompt will ask for the **Duration (in days)**. The system will automatically calculate the expiration date and revert the soldier to `FIT` when the duration ends.
 
 ### 6.2 Medical Attention Dashboard
 
 Navigate to **MEDICAL ATTENTION**.
+
+![Medical_Attention](images/medical_attention.png)
 
 - This triage dashboard automatically isolates personnel who are currently marked as `PENDING`, `CASUALTY`, `MC`, or `LIGHT DUTY`.
 - Use this screen to quickly identify soldiers who require immediate medical review or follow-up.
@@ -115,11 +140,15 @@ The Platoon Commander is responsible for drafting personnel into the system and 
 
 Navigate to **PERSONNEL**.
 
+![Personnel](images/personnel_pc.png)
+
 - **Add Personnel:** Click `+ ADD`. Platoon Commanders can draft new soldiers into the system, but their medical status is strictly locked to `PENDING` until a Medical Officer clears them.
 
 ### 7.2 Managing the Duty Roster
 
 Navigate to **DUTY ROSTER**.
+
+![Duty_Roster](images/duty_roster.png)
 
 - Use the `← PREV` and `NEXT →` buttons at the top to navigate between dates.
 - **Manual Assignment:** Click `+ ADD SLOT`. Input the time (e.g., `08:00`), select a duty type, and assign a currently `FIT` soldier.
@@ -132,7 +161,7 @@ From the Duty Roster screen, click **AUTO-GENERATE**.
 1. Select the Duty Types you require for the day.
 2. Adjust the desired shift duration (in minutes) for each selected duty.
 3. Click `GENERATE ROSTER`.
-4. The algorithm will automatically assign `FIT` personnel to slots, mathematically guaranteeing no overlaps and ensuring every soldier receives a **mandatory 8-hour continuous break** between shifts. 
+4. The algorithm will automatically assign `FIT` personnel to slots, mathematically guaranteeing no overlaps and ensuring every soldier receives a **mandatory 8-hour continuous break** between shifts.
 
 ---
 
@@ -144,11 +173,18 @@ The Logistics Officer audits the system to prepare for rear-echelon resupply.
 
 Navigate to **SUPPLY LEVELS**.
 
-- This provides a read-only, macroscopic view of the entire inventory, automatically sorting items by severity. Critical items (Quantity < 10) are pushed to the top and highlighted in red.
+![Supply Levels](images/supply_levels.png)
+
+- This screen provides a macroscopic view of the entire inventory, automatically sorting items by severity so critical shortages appear at the top.
+- **Add Supply:** Click `+ ADD`. Enter the Nomenclature (name), Quantity, and Expiry Date.
+- **Edit Supply:** Click the `✎` (Edit) button on any row to update its quantity or expiry date.
+- **Delete Supply:** Click the `✕` (Delete) button to permanently remove an item.
 
 ### 8.2 Generating Resupply Reports 
 
 Navigate to **RESUPPLY REPORT**.
+
+![Resupply_Report](images/resupply_report.png)
 
 - The system automatically scans the database against internal thresholds (Quantity < 50, Expiry < 30 days).
 - It generates a consolidated action report detailing exactly why an item was flagged (e.g., "LOW STOCK & EXPIRING"), streamlining the requisition process.

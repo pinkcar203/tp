@@ -4,11 +4,12 @@
 1. [Setting Up](#1-setting-up)
 2. [Design](#2-design)
    - 2.1 [Architecture](#21-architecture)
-   - 2.2 [UI Component](#22-ui-component)
-   - 2.3 [Logic Component](#23-logic-component)
-   - 2.4 [Model Component](#24-model-component)
-   - 2.5 [Storage Component](#25-storage-component)
-   - 2.6 [Common Classes](#26-common-classes)
+   - 2.2 [Entry Point](#22-entry-point)
+   - 2.2 [UI Component](#23-ui-component)
+   - 2.3 [Logic Component](#24-logic-component)
+   - 2.4 [Model Component](#25-model-component)
+   - 2.5 [Storage Component](#26-storage-component)
+   - 2.6 [Common Classes](#27-common-classes)
 3. [Implementation](#3-implementation)
    - 3.1 [Add Supply Feature](#31-add-supply-feature)
    - 3.2 [RBAC Enforcement](#32-rbac-enforcement)
@@ -83,7 +84,13 @@ The following sequence diagram shows the high-level interaction between componen
 
 ---
 
-### 2.2 UI Component
+### 2.2 Entry Point
+
+The entry point of the application is `Main.java`, which initializes the JavaFX framework and boots `LoginScreen.java`. During this boot phase, the `StorageManager` attempts to load the existing `data.json` into the `ModelManager`. Once authenticated, control is handed over to `MainAppScreen.java`, which serves as the root container for the UI layer.
+
+---
+
+### 2.3 UI Component
 
 **Package:** `meditrack.ui`, `meditrack.ui.screen`, `meditrack.ui.modal`, `meditrack.ui.sidebar`
 
@@ -100,7 +107,7 @@ The class diagram below shows the structure of the UI component:
 
 ---
 
-### 2.3 Logic Component
+### 2.4 Logic Component
 
 **Package:** `meditrack.logic`, `meditrack.logic.commands`, `meditrack.logic.parser`
 
@@ -128,6 +135,7 @@ Each `Command` subclass declares its permitted roles:
 | `EditSupplyCommand`            | FIELD_MEDIC, LOGISTICS_OFFICER       |
 | `DeleteSupplyCommand`          | FIELD_MEDIC, LOGISTICS_OFFICER       |
 | `AddPersonnelCommand`          | MEDICAL_OFFICER, PLATOON_COMMANDER   |
+| `EditPersonnelCommand`         | MEDICAL_OFFICER                      |
 | `RemovePersonnelCommand`       | MEDICAL_OFFICER, PLATOON_COMMANDER   |
 | `UpdateStatusCommand`          | MEDICAL_OFFICER, FIELD_MEDIC         |
 | `GenerateResupplyReportCommand`| LOGISTICS_OFFICER                    |
@@ -137,7 +145,7 @@ The `RosterAutoGenerator` is a standalone utility class used by `AutoGenerateMod
 
 ---
 
-### 2.4 Model Component
+### 2.5 Model Component
 
 **Package:** `meditrack.model`
 
@@ -167,7 +175,7 @@ Key design points:
 
 ---
 
-### 2.5 Storage Component
+### 2.6 Storage Component
 
 **Package:** `meditrack.storage`
 
@@ -186,7 +194,7 @@ The Storage component:
 
 ---
 
-### 2.6 Common Classes
+### 2.7 Common Classes
 
 **Package:** `meditrack.commons.core`, `meditrack.security`
 
@@ -205,6 +213,8 @@ This section describes noteworthy details about how certain features are impleme
 ### 3.1 Add Supply Feature
 
 The Add Supply feature illustrates the standard command execution flow used by all commands. The following activity diagram summarizes the decision points:
+
+Precondition: User is authenticated as a `FIELD_MEDIC` or `LOGISTICS_OFFICER`.
 
 ![Add Supply Activity Diagram](architecture/activity_add_supply.png)
 

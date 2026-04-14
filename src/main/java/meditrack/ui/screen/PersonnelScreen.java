@@ -37,6 +37,7 @@ import meditrack.model.Role;
 import meditrack.model.Status;
 import meditrack.ui.modal.AddPersonnelModal;
 import meditrack.ui.modal.RemovePersonnelModal;
+import meditrack.ui.modal.EditPersonnelModal;
 
 /**
  * Personnel Management screen.
@@ -281,7 +282,7 @@ public class PersonnelScreen extends VBox {
                 buildStatusColumn());
 
         if (model.getSession().getRole() == Role.MEDICAL_OFFICER) {
-            table.getColumns().addAll(buildBloodGroupColumn(), buildAllergiesColumn());
+            table.getColumns().addAll(buildBloodGroupColumn(), buildAllergiesColumn(), buildActionsColumn());
         }
     }
 
@@ -452,6 +453,47 @@ public class PersonnelScreen extends VBox {
             }
         });
         return col;
+    }
+
+    /** Builds the interactive action buttons column for Medical Officers. */
+    private TableColumn<Personnel, Void> buildActionsColumn() {
+        TableColumn<Personnel, Void> actionsCol = new TableColumn<>("ACTIONS");
+        actionsCol.setMinWidth(70);
+        actionsCol.setMaxWidth(80);
+        actionsCol.setCellFactory(col -> new TableCell<>() {
+            private final Button editBtn = new Button("✎");
+            private final HBox box = new HBox(editBtn);
+            {
+                String base = "-fx-background-color: #333531; -fx-text-fill: #c8c6c6; -fx-font-size: 13px; -fx-cursor: hand; -fx-pref-width: 34; -fx-pref-height: 34;"
+                        + " -fx-border-color: rgba(69,72,60,0.25); -fx-border-width: 1; -fx-background-radius: 0;";
+                editBtn.setStyle(base);
+                box.setAlignment(Pos.CENTER);
+
+                editBtn.setOnMouseEntered(e -> editBtn.setStyle(base.replace("-fx-text-fill: #c8c6c6", "-fx-text-fill: #b6d088")));
+                editBtn.setOnMouseExited(e -> editBtn.setStyle(base));
+
+                editBtn.setOnAction(e -> {
+                    int idx = getIndex();
+                    if (idx >= 0 && idx < getTableView().getItems().size()) {
+                        Personnel p = getTableView().getItems().get(idx);
+                        int modelIdx = model.getFilteredPersonnelList(null).indexOf(p) + 1;
+                        EditPersonnelModal.show(model, logic, p, modelIdx, getScene().getWindow());
+                        refresh();
+                    }
+                });
+            }
+
+            @Override protected void updateItem(Void v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || model.getSession().getRole() != Role.MEDICAL_OFFICER) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(box);
+                }
+                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER;");
+            }
+        });
+        return actionsCol;
     }
 
     /** Creates an interactive dropdown cell to execute UpdateStatusCommands natively in the table. */

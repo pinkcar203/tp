@@ -23,12 +23,17 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import meditrack.commons.core.Constants;
+import meditrack.logic.Logic;
 import meditrack.model.Model;
 import meditrack.model.Supply;
+import meditrack.ui.modal.AddSupplyModal;
+import meditrack.ui.modal.DeleteSupplyModal;
+import meditrack.ui.modal.EditSupplyModal;
 
 /**
  * A comprehensive Supply Levels overview screen explicitly designed for Logistics Officers.
- * It provides a macroscopic read-only view of all tracked inventory items.
+ * It provides a macroscopic view of all tracked inventory items, sorted by severity,
+ * with full Add/Edit/Delete capabilities.
  */
 public class SupplyLevelsScreen extends VBox {
     private static final String BG              = "#121410";
@@ -39,6 +44,7 @@ public class SupplyLevelsScreen extends VBox {
     private static final String SURFACE_BRIGHT  = "#383a35";
     private static final String PRIMARY         = "#b6d088";
     private static final String PRIMARY_CONT    = "#556b2f";
+    private static final String ON_PRIMARY      = "#233600";
     private static final String OUTLINE         = "#8f9284";
     private static final String OUTLINE_VAR     = "#45483c";
     private static final String ON_SURFACE      = "#e3e3dc";
@@ -48,6 +54,7 @@ public class SupplyLevelsScreen extends VBox {
     private static final int    PAGE_SIZE       = 15;
 
     private final Model model;
+    private final Logic logic;
     private final TableView<Supply> table = new TableView<>();
 
     private FilteredList<Supply> filtered;
@@ -63,13 +70,15 @@ public class SupplyLevelsScreen extends VBox {
     private Button nextBtn;
 
     /**
-     * Constructs the read-only Supply Levels overview screen.
-     * Decoupled to rely entirely on the Model interface.
+     * Constructs the Supply Levels overview screen.
+     * Decoupled to rely entirely on the Model and Logic interfaces.
      *
      * @param model The application model providing live supply data.
+     * @param logic The logic engine providing command execution context.
      */
-    public SupplyLevelsScreen(Model model) {
+    public SupplyLevelsScreen(Model model, Logic logic) {
         this.model = model;
+        this.logic = logic;
         buildUi();
     }
 
@@ -103,7 +112,7 @@ public class SupplyLevelsScreen extends VBox {
         updatePage();
     }
 
-    /** Builds the top title bar and interactive search box. */
+    /** Builds the top title bar, search box, and Add button. */
     private HBox buildHeader() {
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -115,7 +124,7 @@ public class SupplyLevelsScreen extends VBox {
         Label title = new Label("SUPPLY LEVELS");
         title.setStyle("-fx-text-fill: " + ON_SURFACE + "; -fx-font-size: 20px; -fx-font-weight: bold;"
                 + " -fx-font-family: 'Consolas', 'Courier New', monospace;");
-        Label subtitle = new Label("Full stock overview. View-only.");
+        Label subtitle = new Label("Full stock overview. Sorted by severity.");
         subtitle.setStyle("-fx-text-fill: " + SECONDARY + "; -fx-font-size: 10px;"
                 + " -fx-font-family: 'Consolas', monospace;");
         titleArea.getChildren().addAll(title, subtitle);
@@ -144,7 +153,21 @@ public class SupplyLevelsScreen extends VBox {
         });
         searchBar.getChildren().addAll(searchIcon, searchField);
 
-        header.getChildren().addAll(titleArea, spacer, searchBar);
+        String addNormal = "-fx-background-color: " + PRIMARY_CONT + "; -fx-text-fill: white;"
+                + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-background-radius: 0;";
+        String addHover = "-fx-background-color: " + PRIMARY + "; -fx-text-fill: " + ON_PRIMARY + ";"
+                + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;"
+                + " -fx-cursor: hand; -fx-background-radius: 0;";
+        Button addBtn = new Button("+ ADD ");
+        addBtn.setPrefHeight(42);
+        addBtn.setPadding(new Insets(0, 20, 0, 20));
+        addBtn.setStyle(addNormal);
+        addBtn.setOnMouseEntered(e -> addBtn.setStyle(addHover));
+        addBtn.setOnMouseExited(e -> addBtn.setStyle(addNormal));
+        addBtn.setOnAction(e -> AddSupplyModal.show(model, logic, getScene().getWindow()));
+
+        header.getChildren().addAll(titleArea, spacer, searchBar, addBtn);
         return header;
     }
 
@@ -196,7 +219,8 @@ public class SupplyLevelsScreen extends VBox {
                 buildIndexColumn(),
                 buildNameColumn(),
                 buildQuantityColumn(),
-                buildExpiryColumn()
+                buildExpiryColumn(),
+                buildActionsColumn()
         );
 
         VBox section = new VBox(0);
@@ -324,6 +348,65 @@ public class SupplyLevelsScreen extends VBox {
         return col;
     }
 
+    /** Builds the interactive action buttons column. */
+    private TableColumn<Supply, Void> buildActionsColumn() {
+        TableColumn<Supply, Void> actionsCol = new TableColumn<>("ACTIONS");
+        actionsCol.setMinWidth(100);
+        actionsCol.setMaxWidth(110);
+        actionsCol.setCellFactory(col -> new TableCell<>() {
+            private final Button editBtn = new Button("✎");
+            private final Button deleteBtn = new Button("✕");
+            private final HBox box = new HBox(4, editBtn, deleteBtn);
+            {
+                String base = "-fx-background-color: " + SURFACE_HIGHEST + "; -fx-text-fill: " + SECONDARY + ";"
+                        + " -fx-font-size: 13px; -fx-cursor: hand; -fx-pref-width: 34; -fx-pref-height: 34;"
+                        + " -fx-border-color: rgba(69,72,60,0.25); -fx-border-width: 1; -fx-background-radius: 0;";
+                editBtn.setStyle(base);
+                deleteBtn.setStyle(base);
+                box.setAlignment(Pos.CENTER_RIGHT);
+
+                editBtn.setOnMouseEntered(e -> editBtn.setStyle(base.replace("-fx-text-fill: " + SECONDARY, "-fx-text-fill: " + PRIMARY)));
+                editBtn.setOnMouseExited(e -> editBtn.setStyle(base));
+
+                deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle(base.replace("-fx-text-fill: " + SECONDARY, "-fx-text-fill: " + ERROR)));
+                deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle(base));
+
+                editBtn.setOnAction(e -> {
+                    int idx = getIndex();
+                    if (idx >= 0 && idx < getTableView().getItems().size()) {
+                        Supply supply = getTableView().getItems().get(idx);
+                        int modelIdx = -1;
+                        ObservableList<Supply> rawList = model.getFilteredSupplyList();
+                        for (int i = 0; i < rawList.size(); i++) {
+                            if (rawList.get(i) == supply) { modelIdx = i + 1; break; }
+                        }
+                        if (modelIdx != -1) EditSupplyModal.show(model, logic, supply, modelIdx, getScene().getWindow());
+                    }
+                });
+
+                deleteBtn.setOnAction(e -> {
+                    int idx = getIndex();
+                    if (idx >= 0 && idx < getTableView().getItems().size()) {
+                        Supply supply = getTableView().getItems().get(idx);
+                        int modelIdx = -1;
+                        ObservableList<Supply> rawList = model.getFilteredSupplyList();
+                        for (int i = 0; i < rawList.size(); i++) {
+                            if (rawList.get(i) == supply) { modelIdx = i + 1; break; }
+                        }
+                        if (modelIdx != -1) DeleteSupplyModal.show(model, logic, supply, modelIdx, getScene().getWindow());
+                    }
+                });
+            }
+
+            @Override protected void updateItem(Void v, boolean empty) {
+                super.updateItem(v, empty);
+                setGraphic(empty ? null : box);
+                setStyle("-fx-background-color: transparent; -fx-alignment: CENTER_RIGHT;");
+            }
+        });
+        return actionsCol;
+    }
+
     /** Builds the footer containing total counts and pagination navigation. */
     private HBox buildFooter() {
         HBox footer = new HBox(12);
@@ -413,13 +496,11 @@ public class SupplyLevelsScreen extends VBox {
     private void updateFooterStats() {
         int total = model.getFilteredSupplyList().size();
         int critical = model.getLowStockSupplies(10).size();
-
-        // Subtract critical items so they aren't double-counted in Low Stock
         int lowStock = model.getLowStockSupplies(50).size() - critical;
 
         if (totalLabel != null) totalLabel.setText("TOTAL ITEMS: " + total);
-        if (lowStockLabel != null) lowStockLabel.setText("LOW STOCK: " + lowStock);
-        if (criticalLabel != null) criticalLabel.setText("CRITICAL: " + critical);
+        if (lowStockLabel != null) lowStockLabel.setText("LOW STOCK (<50): " + lowStock);
+        if (criticalLabel != null) criticalLabel.setText("CRITICAL (<10): " + critical);
     }
 
     /** Reloads the screen data safely on the UI thread. */

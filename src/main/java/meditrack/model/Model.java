@@ -144,6 +144,15 @@ public interface Model {
     void setPersonnelStatus(int oneBasedIndex, Status newStatus) throws CommandException;
 
     /**
+     * Replaces the target personnel with the updated editedPersonnel.
+     * This operation will automatically trigger a refresh on any observing UI components.
+     *
+     * @param target          The original Personnel object currently in the roster.
+     * @param editedPersonnel The updated Personnel object containing the new data.
+     */
+    void setPersonnel(Personnel target, Personnel editedPersonnel);
+
+    /**
      * Retrieves a static snapshot list of personnel, optionally filtered by a specific status.
      *
      * @param statusFilter The status to filter by, or null to return the entire roster.

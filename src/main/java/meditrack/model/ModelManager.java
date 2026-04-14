@@ -255,6 +255,21 @@ public class ModelManager implements Model {
     }
 
     /**
+     * Replaces the target personnel with the updated editedPersonnel.
+     *
+     * @param target          The original Personnel object to be replaced.
+     * @param editedPersonnel The updated Personnel object containing the new data.
+     */
+    @Override
+    public void setPersonnel(Personnel target, Personnel editedPersonnel) {
+        ObservableList<Personnel> internalList = getInternalPersonnelList();
+        int index = internalList.indexOf(target);
+        if (index != -1) {
+            internalList.set(index, editedPersonnel);
+        }
+    }
+
+    /**
      * Retrieves personnel filtered by status.
      *
      * @param statusFilter The status to filter by, or null for all.
