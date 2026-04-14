@@ -9,8 +9,6 @@ import meditrack.model.Model;
 
 /**
  * Validates raw UI field maps before a command object is constructed.
- * Throws a {@link ParseException} describing the first violated rule so the UI
- * can surface a meaningful error message to the user.
  */
 public class Parser {
 
@@ -60,7 +58,7 @@ public class Parser {
 
     /**
      * Validates supply-specific fields: name (non-blank), quantity (positive integer),
-     * and expiry date (valid ISO-8601 date that is strictly in the future).
+     * and expiry date.
      *
      * @param fields The raw field map from the UI.
      * @throws ParseException If any supply field fails validation.

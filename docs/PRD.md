@@ -225,7 +225,7 @@ The system shall:
 
 The system shall:
 
-- Identify supplies whose quantity falls below a threshold of 20 units.
+- Identify supplies whose quantity falls below the configured low-stock threshold (`Constants.LOW_STOCK_THRESHOLD_QUANTITY`, currently **50** units).
 - Display these items sorted by quantity ascending so the most critical shortages appear first.
 
 ---
@@ -234,7 +234,7 @@ The system shall:
 
 The system shall allow Logistics Officers to:
 
-- Analyse the inventory and flag supplies that are low in stock (quantity < 20) or expiring within 30 days.
+- Analyse the inventory and flag supplies that are low in stock (quantity below the low-stock threshold, currently **50** units) or expiring within 30 days.
 - Display a consolidated report indicating the reason each item was flagged (low stock, expiring, or both).
 
 ---
@@ -323,7 +323,7 @@ The system should prevent invalid data entries such as:
 - Negative supply quantities
 - Invalid or past expiration dates
 - Missing required fields
-- Duplicate personnel or supply names (case-insensitive)
+- Duplicate personnel names (case-insensitive).
 
 ---
 

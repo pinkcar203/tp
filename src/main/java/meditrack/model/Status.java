@@ -57,7 +57,7 @@ public enum Status {
     }
 
     /**
-     * Returns a human-readable representation of the status, replacing underscores with spaces.
+     * Returns status, replacing underscores with spaces.
      *
      * @return The formatted status string.
      */

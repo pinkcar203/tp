@@ -68,8 +68,6 @@
 
 The following diagram gives a high-level overview of MediTrack's architecture:
 
-![Architecture Diagram Overall](a2rchitecture_overview.png)
-
 ![Architecture Diagram](architecture/architecture_overview.png)
 
 **Key constraint:** Each layer may only depend on the layer directly below it. The UI never accesses Storage directly; the Model never calls Logic. The **Commons** package contains utility classes (e.g., `Index`, `Constants`) used across all components.
@@ -95,7 +93,7 @@ The class diagram below shows the structure of the UI component:
 
 **How the UI works:**
 
-1. `LoginScreen` authenticates the user and sets `Session.role` via `Model.setRole()`.
+1. `LoginScreen` authenticates the user with the selected role’s demo password (BCrypt-verified in memory) and sets the active role via `model.getSession().setRole()` (equivalently `Model.setRole()` delegates to the same session).
 2. `MainAppScreen` initializes the `Sidebar`, which dynamically shows only the screens the current role can access.
 3. Each screen reads data from the `Model` through `ObservableList` bindings, when the Model changes, the UI updates automatically (Observer pattern via JavaFX).
 4. When the user triggers an action (e.g., clicks "+ ADD"), the relevant modal collects input, calls `Parser.validate()`, constructs a `Command` object, and passes it to `LogicManager.executeCommand()`.
@@ -133,7 +131,7 @@ Each `Command` subclass declares its permitted roles:
 | `RemovePersonnelCommand`       | MEDICAL_OFFICER, PLATOON_COMMANDER   |
 | `UpdateStatusCommand`          | MEDICAL_OFFICER, FIELD_MEDIC         |
 | `GenerateResupplyReportCommand`| LOGISTICS_OFFICER                    |
-| `GenerateRosterCommand`        | PLATOON_COMMANDER                    |
+
 
 The `RosterAutoGenerator` is a standalone utility class used by `AutoGenerateModal` and it does not go through the `Command` pipeline because it produces multiple `DutySlot` objects that are added to the model in batch.
 
@@ -215,10 +213,11 @@ The Add Supply feature illustrates the standard command execution flow used by a
 **Step 2:** The user enters a name, quantity, and expiry date. On submit, the modal calls:
 
 ```java
+Parser parser = new Parser(model);
 parser.validate(CommandType.ADD_SUPPLY, fields);
 ```
 
-The `Parser` checks that:
+The `Parser` (see `Parser.java`) validates supply-related commands and the resupply report; personnel forms use `PersonnelParser` and related checks. For add supply it checks that:
 - Name is non-blank.
 - Quantity is a positive integer.
 - Expiry date is a valid future date in `YYYY-MM-DD` format.
@@ -306,7 +305,7 @@ The following sequence diagram shows the `cleanExpiredStatuses()` mechanism:
 
 **Injectable Clock:** `ModelManager` uses `java.time.Clock` for all date calculations. This allows:
 - **Unit testing:** Inject a fixed clock (`Clock.fixed(...)`) to test expiry logic deterministically.
-- **Developer mode:** The `Ctrl+Shift+D` panel calls `model.setClock(Clock.offset(...))` to advance the application's internal clock without changing the system clock.
+- **Developer mode:** The `Ctrl+Shift+D` panel prompts for a number of days (default `3`) and calls `model.setClock(Clock.offset(...))` to advance the application's internal clock without changing the system clock, then runs `cleanExpiredStatuses()`.
 
 #### Design Considerations
 
@@ -388,11 +387,13 @@ The result is a `GenerateResult` record containing:
 **Lifecycle:**
 
 1. **Application start:** `StorageManager.readMediTrackData()` calls `JsonMediTrackStorage.readData()`.
-   - If `data.json` is missing → returns `Optional.empty()` → triggers first-launch flow (`FirstLaunchScreen`).
-   - If `data.json` exists → Jackson deserializes it into `JsonSerializableMediTrack`.
-   - Each `JsonAdapted*` record is converted via `toModelType()`. Corrupt records throw `CommandException` and are skipped (logged to `stderr`).
+   - If `data.json` is missing → returns `Optional.empty()` → `Main` constructs an empty `MediTrack` and shows the normal `LoginScreen` (no separate “first launch” password-setup screen).
+   - If `data.json` exists but **cannot be parsed as JSON** (severely corrupted file) → `readData()` returns `Optional.empty()` and the app also starts with an empty model (see `JsonMediTrackStorage`); this is distinct from per-record validation below.
+   - If parsing succeeds → Jackson deserializes into `JsonSerializableMediTrack`. Each `JsonAdapted*` record is converted via `toModelType()`. Invalid individual records throw `CommandException` and are skipped (warnings to `stderr` via `StorageManager`).
 
 2. **After every command:** `LogicManager` calls `storage.saveMediTrackData(model.getMediTrack())`, which serializes the entire model to `data.json` via `ObjectMapper.writerWithDefaultPrettyPrinter()`.
+
+**Note:** Role passwords are **not** stored in `data.json`; authentication uses per-role demo credentials verified in `LoginScreen` (BCrypt), as described in the PRD.
 
 **JSON schema:**
 
@@ -461,21 +462,18 @@ The result is a `GenerateResult` record containing:
 ```
 src/test/java/meditrack/
 ├── commons/core/
-│   ├── IndexTest.java
-│   └── IndexExtendedTest.java
+│   └── IndexTest.java
 ├── logic/
 │   ├── LogicManagerTest.java
 │   ├── WorkflowValidationTest.java
 │   ├── commands/
 │   │   ├── CommandResultTest.java
-│   │   ├── CommandResultExtendedTest.java
-│   │   ├── GenerateResupplyReportCommandExtendedTest.java
+│   │   ├── GenerateResupplyReportCommandTest.java
 │   │   ├── SupplyCommandsTest.java
 │   │   ├── exceptions/
 │   │   │   └── CommandExceptionTest.java
 │   │   └── personnel/
 │   │       ├── AddPersonnelCommandTest.java
-│   │       ├── AddPersonnelCommandExtendedTest.java
 │   │       ├── RemovePersonnelCommandTest.java
 │   │       └── UpdateStatusCommandTest.java
 │   └── parser/
@@ -488,31 +486,23 @@ src/test/java/meditrack/
 ├── model/
 │   ├── BloodGroupTest.java
 │   ├── DutySlotTest.java
-│   ├── DutySlotExtendedTest.java
 │   ├── DutyTypeTest.java
 │   ├── MediTrackTest.java
 │   ├── ModelManagerTest.java
-│   ├── ModelManagerExtendedTest.java
 │   ├── PersonnelTest.java
-│   ├── PersonnelExtendedTest.java
 │   ├── RoleTest.java
 │   ├── SessionTest.java
 │   ├── StatusTest.java
-│   ├── SupplyTest.java
-│   └── SupplyExtendedTest.java
+│   └── SupplyTest.java
 ├── security/
 │   └── PasswordManagerTest.java
 └── storage/
     ├── CsvExportUtilityTest.java
     ├── JsonAdaptedDutySlotTest.java
-    ├── JsonAdaptedDutySlotExtendedTest.java
     ├── JsonAdaptedPersonnelTest.java
-    ├── JsonAdaptedPersonnelExtendedTest.java
     ├── JsonAdaptedSupplyTest.java
-    ├── JsonAdaptedSupplyExtendedTest.java
     ├── JsonMediTrackStorageTest.java
-    ├── StorageManagerTest.java
-    └── StorageManagerExtendedTest.java
+    └── StorageManagerTest.java
 ```
 
 ### Test Isolation Techniques
@@ -559,7 +549,7 @@ src/test/java/meditrack/
 2. Update `getRequiredRoles()` on existing commands to include or exclude the new role.
 3. Add UI screens and sidebar items for the new role's workflows.
 4. Update `CsvExportUtility` to define what data the new role can export.
-5. Update `LoginScreen` to include the new role.
+5. Extend `LoginScreen` with a BCrypt hash branch for the new role’s demo password (the role dropdown is populated from `Role.values()` automatically).
 
 
 ---
@@ -582,7 +572,7 @@ src/test/java/meditrack/
 | `***`    | Medical Officer       | add personnel with blood group and allergies       | maintain comprehensive medical records                    |
 | `***`    | Medical Officer       | assign MC/LIGHT_DUTY with a duration               | have the system auto-revert to FIT when the period ends   |
 | `***`    | Medical Officer       | view personnel needing medical attention            | quickly triage non-FIT soldiers                           |
-| `***`    | Platoon Commander     | draft new personnel into the system                | build and maintain the unit roster                        |
+| `***`    | Platoon Commander     | add new personnel to the system (PENDING status)   | build and maintain the unit roster                        |
 | `***`    | Platoon Commander     | manually assign duty slots                         | control specific shift assignments                        |
 | `***`    | Platoon Commander     | auto-generate a fair duty roster                   | save time and ensure equitable rotation                   |
 | `***`    | Logistics Officer     | view supply levels sorted by severity              | identify critical shortages at a glance                   |
@@ -667,7 +657,7 @@ For all use cases, the **System** is `MediTrack` and the **Actor** is the authen
 
 1. **Platform:** Should work on any OS with Java 21 or above installed.
 2. **Offline operation:** Must function entirely offline with no network dependency.
-3. **Performance:** Should handle up to 200 personnel and 500 supply items without noticeable lag (< 1 second for any command).
+3. **Performance:** Should handle up to 200 personnel and supply items without noticeable lag (< 1 second for any command).
 4. **Data persistence:** All data must be saved to local storage after every command execution.
 5. **Security:** Passwords must be stored as BCrypt hashes, never in plain text. The application must enforce RBAC at the logic layer.
 6. **Usability:** A military operator with basic computer literacy should be able to use the core features without training beyond the User Guide.
@@ -698,18 +688,17 @@ For all use cases, the **System** is `MediTrack` and the **Actor** is the authen
 
 ## Appendix F: Manual Testing Instructions
 
-### F.1 Launch and First-Time Setup
+### F.1 Launch and Empty Data File
 
 1. Delete `data.json` from the project root (if it exists) to simulate a fresh installation.
 2. Run `./gradlew run`.
-3. **Expected:** The First Launch Screen appears, prompting the user to set a master password.
-4. Enter a password and confirm.
-5. **Expected:** The Login Screen appears.
+3. **Expected:** The Login Screen appears immediately. The in-memory model starts empty until you add data after login.
+4. Use the demo credentials from the PRD to sign in.
 
 ### F.2 Login
 
 1. Select a role (e.g., "Field Medic") from the dropdown.
-2. Enter the correct password.
+2. Enter the correct password for that role (see PRD credential table).
 3. **Expected:** The application navigates to the Dashboard. The sidebar shows only Field Medic-accessible screens.
 4. Enter an incorrect password.
 5. **Expected:** An error message is displayed. The user remains on the Login Screen.
@@ -742,8 +731,8 @@ For all use cases, the **System** is `MediTrack` and the **Actor** is the authen
 2. Navigate to Personnel. Add a personnel member if none exist.
 3. Change a personnel member's status to MC with duration 1 day.
 4. **Expected:** Status changes to MC. `statusExpiryDate` is set to tomorrow.
-5. Press `Ctrl+Shift+D` to open Developer Mode. Time-travel forward 2 days.
-6. **Expected:** The personnel member's status automatically reverts to FIT.
+5. Press `Ctrl+Shift+D` to open Developer Mode. In the dialog, enter `2` (or another value) to fast-forward that many days.
+6. **Expected:** The personnel member's status automatically reverts to FIT once the simulated date passes the expiry.
 
 ### F.6 Auto-Generate Roster
 

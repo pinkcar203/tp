@@ -81,8 +81,6 @@ public class DutySlot {
 
     /**
      * Formats the duty time range for UI display.
-     * E.g., "08:00 - 10:00" or "22:00 - 02:00 (+1)" for overnight shifts.
-     *
      * @return A formatted time range string.
      */
     public String getTimeSlotDisplay() {

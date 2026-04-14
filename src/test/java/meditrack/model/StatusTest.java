@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * JUnit tests for the Status enum, verifying deployment logic and string parsing.
+ * Tests for the Status enum, verifying deployment logic and string parsing.
  */
 public class StatusTest {
 

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
- * JUnit tests for the BloodGroup enum, verifying display formatting and robust string parsing.
+ * Tests for the BloodGroup enum, verifying display formatting and robust string parsing.
  */
 public class BloodGroupTest {
 

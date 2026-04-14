@@ -12,8 +12,6 @@ import meditrack.logic.commands.exceptions.CommandException;
 /**
  * Defines the API for the application's in-memory data model.
  * Acts as a centralized facade to manage personnel, supplies, duty slots, and the active session.
- * By programming against this interface rather than a concrete class, the application achieves
- * loose coupling and adheres to the Dependency Inversion Principle.
  */
 public interface Model {
 
@@ -102,8 +100,7 @@ public interface Model {
 
     /**
      * Retrieves a read-only view of the underlying MediTrack data structures.
-     * Used securely by the Storage layer to serialize and persist data to the hard drive.
-     *
+     * 
      * @return The ReadOnlyMediTrack instance.
      */
     ReadOnlyMediTrack getMediTrack();
@@ -156,8 +153,7 @@ public interface Model {
 
     /**
      * Retrieves the live, observable list of all personnel.
-     * Designed to be bound directly to JavaFX TableViews for automatic UI updates.
-     *
+     * 
      * @return An ObservableList of all Personnel.
      */
     ObservableList<Personnel> getPersonnelList();
