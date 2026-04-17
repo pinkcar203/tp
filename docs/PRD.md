@@ -2,7 +2,7 @@
 
 ## Demo Video
 
-[Watch the MediTrack demo on Google Drive](https://drive.google.com/file/d/1hN74Z3nh_04Pj5khSHWeueCaimf_FQfp/view?usp=sharing)
+[Watch the MediTrack demo on Google Drive](https://drive.google.com/file/d/1_szb43Ip7IusvwUSp-yDspeJWB25B0_Q/view?usp=sharing)
 Remember to open caption(CC) for details :)
 ---
 
