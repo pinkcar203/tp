@@ -42,6 +42,6 @@ public enum BloodGroup {
                 return bg;
             }
         }
-        return UNKNOWN; // Failsafe for invalid inputs
+        return UNKNOWN;
     }
 }

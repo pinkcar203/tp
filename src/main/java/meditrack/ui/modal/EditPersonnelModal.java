@@ -15,11 +15,15 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import meditrack.logic.Logic;
+import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.logic.commands.personnel.EditPersonnelCommand;
 import meditrack.model.BloodGroup;
 import meditrack.model.Model;
 import meditrack.model.Personnel;
 
+/**
+ * MO edits blood group + allergies for one roster row ({@code index} is 1-based for {@link EditPersonnelCommand}).
+ */
 public class EditPersonnelModal {
     public static void show(Model model, Logic logic, Personnel personnel, int index, Window owner) {
         Stage stage = new Stage();
@@ -75,7 +79,7 @@ public class EditPersonnelModal {
                 EditPersonnelCommand cmd = new EditPersonnelCommand(index, bgBox.getValue(), newAllergies);
                 logic.executeCommand(cmd);
                 stage.close();
-            } catch (Exception ex) {
+            } catch (CommandException ex) {
                 errorLabel.setText(ex.getMessage());
             }
         });

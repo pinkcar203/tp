@@ -1,11 +1,10 @@
 package meditrack.model;
 
 /**
- * Represents the medical readiness status of a Personnel member.
- * Valid values dictate deployment eligibility and role-based permissions.
+ * Medical posting / MC state for roster rules and RBAC (who can set what).
  */
 public enum Status {
-    /** Newly added by Platoon Commander, awaiting Medical Officer assessment. */
+    /** Platoon adds first; MO has not cleared them yet. */
     PENDING,
     /** Medically cleared for full duty and deployment. */
     FIT,

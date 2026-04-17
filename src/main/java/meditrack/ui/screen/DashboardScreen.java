@@ -17,6 +17,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import meditrack.commons.core.Constants;
 import meditrack.model.Model;
 import meditrack.model.Personnel;
 import meditrack.model.Role;
@@ -158,15 +159,18 @@ public class DashboardScreen extends VBox {
 
         List<Supply> supplies = model.getFilteredSupplyList();
         int totalSupplies = supplies.size();
-        int critical = model.getLowStockSupplies(10).size();
-        int lowStock = model.getLowStockSupplies(50).size() - critical;
-        int expiringSoon = getExpiringAndExpired(30).size();
+        int critical = model.getLowStockSupplies(Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY).size();
+        int lowStock = model.getLowStockSupplies(Constants.LOW_STOCK_THRESHOLD_QUANTITY).size() - critical;
+        int expiringSoon = getExpiringAndExpired(Constants.EXPIRY_THRESHOLD_DAYS).size();
         int totalPersonnel = model.getPersonnelList().size();
 
         addStatCard(0, "TOTAL SUPPLIES", String.valueOf(totalSupplies), OLIVE_PALE, null);
-        addStatCard(1, "LOW STOCK (<50)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
-        addStatCard(2, "EXPIRING / EXPIRED", String.valueOf(expiringSoon), expiringSoon > 0 ? WARNING : OLIVE_LIGHT, expiringSoon > 0 ? WARNING : null);
-        addStatCard(3, "CRITICAL (<10)", String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT, critical > 0 ? ERROR : null);
+        addStatCard(1, "LOW STOCK (<" + Constants.LOW_STOCK_THRESHOLD_QUANTITY + ")",
+                String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
+        addStatCard(2, "EXPIRING / EXPIRED", String.valueOf(expiringSoon),
+                expiringSoon > 0 ? WARNING : OLIVE_LIGHT, expiringSoon > 0 ? WARNING : null);
+        addStatCard(3, "CRITICAL (<" + Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY + ")",
+                String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT, critical > 0 ? ERROR : null);
         addStatCard(4, "TOTAL PERSONNEL", String.valueOf(totalPersonnel), OLIVE_PALE, null);
 
         buildSupplyAlertActivity();
@@ -212,14 +216,17 @@ public class DashboardScreen extends VBox {
         configureStatGridColumns(4);
 
         int total = model.getFilteredSupplyList().size();
-        int critical = model.getLowStockSupplies(10).size();
-        int lowStock = model.getLowStockSupplies(50).size() - critical;
-        int expiringSoon = getExpiringAndExpired(30).size();
+        int critical = model.getLowStockSupplies(Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY).size();
+        int lowStock = model.getLowStockSupplies(Constants.LOW_STOCK_THRESHOLD_QUANTITY).size() - critical;
+        int expiringSoon = getExpiringAndExpired(Constants.EXPIRY_THRESHOLD_DAYS).size();
 
         addStatCard(0, "TOTAL SUPPLIES", String.valueOf(total), OLIVE_PALE, null);
-        addStatCard(1, "LOW STOCK (<50)", String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
-        addStatCard(2, "EXPIRING / EXPIRED", String.valueOf(expiringSoon), expiringSoon > 0 ? WARNING : OLIVE_LIGHT, expiringSoon > 0 ? WARNING : null);
-        addStatCard(3, "CRITICAL (<10)", String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT, critical > 0 ? ERROR : null);
+        addStatCard(1, "LOW STOCK (<" + Constants.LOW_STOCK_THRESHOLD_QUANTITY + ")",
+                String.valueOf(lowStock), lowStock > 0 ? WARNING : OLIVE_LIGHT, lowStock > 0 ? WARNING : null);
+        addStatCard(2, "EXPIRING / EXPIRED", String.valueOf(expiringSoon),
+                expiringSoon > 0 ? WARNING : OLIVE_LIGHT, expiringSoon > 0 ? WARNING : null);
+        addStatCard(3, "CRITICAL (<" + Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY + ")",
+                String.valueOf(critical), critical > 0 ? ERROR : OLIVE_LIGHT, critical > 0 ? ERROR : null);
 
         buildSupplyAlertActivity();
     }
@@ -269,8 +276,8 @@ public class DashboardScreen extends VBox {
         activityPane.getChildren().add(buildSectionHeader(
                 "SUPPLY ALERT SUMMARY", "ITEMS REQUIRING ATTENTION"));
 
-        List<Supply> lowStock = model.getLowStockSupplies(50);
-        List<Supply> expiringSoon = getExpiringAndExpired(30);
+        List<Supply> lowStock = model.getLowStockSupplies(Constants.LOW_STOCK_THRESHOLD_QUANTITY);
+        List<Supply> expiringSoon = getExpiringAndExpired(Constants.EXPIRY_THRESHOLD_DAYS);
 
         if (lowStock.isEmpty() && expiringSoon.isEmpty()) {
             activityPane.getChildren().add(buildEmptyState("ALL SUPPLY LEVELS NORMAL"));
@@ -285,9 +292,10 @@ public class DashboardScreen extends VBox {
 
         // Process items that are Low Stock (and potentially also Expiring/Expired)
         for (Supply s : lowStock) {
-            boolean isCritical = s.getQuantity() < 10;
+            boolean isCritical = s.getQuantity() < Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY;
             boolean isAlreadyExpired = s.getExpiryDate().isBefore(today);
-            boolean isExpiringSoon = !isAlreadyExpired && s.getExpiryDate().isBefore(today.plusDays(30));
+            boolean isExpiringSoon = !isAlreadyExpired
+                    && s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS));
 
             // Start with the base quantity tag
             String tag = isCritical ? "CRITICAL" : "LOW STOCK";

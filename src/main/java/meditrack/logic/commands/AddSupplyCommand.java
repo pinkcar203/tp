@@ -1,16 +1,17 @@
 package meditrack.logic.commands;
 
 import java.time.LocalDate;
-import java.util.Objects;
 import java.util.List;
+import java.util.Objects;
+
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
 import meditrack.model.Supply;
 
 /**
- * Adds a new supply item to the inventory.
- * Field Medic and Logistics Officer roles can run this command.
+ * Adds one supply row to the inventory table.
+ * Field medics and logistics officers can use this (see module scope).
  */
 public class AddSupplyCommand extends Command {
 
@@ -21,9 +22,9 @@ public class AddSupplyCommand extends Command {
     private final LocalDate expiryDate;
 
     /**
-     * @param name supply name
-     * @param quantity quantity to add
-     * @param expiryDate expiry date
+     * @param name       item name (e.g. bandages)
+     * @param quantity   how many units
+     * @param expiryDate best-before date
      */
     public AddSupplyCommand(String name, int quantity, LocalDate expiryDate) {
         this.name = Objects.requireNonNull(name);
@@ -39,7 +40,7 @@ public class AddSupplyCommand extends Command {
         return new CommandResult(String.format(MESSAGE_SUCCESS, name, quantity, expiryDate));
     }
 
-    /** Field medic only. */
+    /** Field medic or logistics officer. */
     @Override
     public List<Role> getRequiredRoles() {
         return List.of(Role.FIELD_MEDIC, Role.LOGISTICS_OFFICER);

@@ -5,14 +5,15 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
 import meditrack.model.Supply;
 
 /**
- * Generates a resupply report flagging items that are low stock or
- * expiring soon. Only the Logistics Officer can run this.
+ * Builds a text report of supplies that are low on quantity or expiring within X days.
+ * Logistics officer only in our RBAC.
  */
 public class GenerateResupplyReportCommand extends Command {
 
@@ -23,15 +24,18 @@ public class GenerateResupplyReportCommand extends Command {
     private final int daysThreshold;
 
     /**
-     * @param quantityThreshold counts as low stock below this quantity
-     * @param daysThreshold     expiring within this many days is flagged
+     * @param quantityThreshold anything at or under this quantity counts as low stock (same idea as Constants in commons)
+     * @param daysThreshold     expiring within this many days from today counts as "soon"
      */
     public GenerateResupplyReportCommand(int quantityThreshold, int daysThreshold) {
         this.quantityThreshold = quantityThreshold;
         this.daysThreshold = daysThreshold;
     }
 
-    /** Shared helper. */
+    /**
+     * Pulled out static so tests (and maybe UI previews later) can reuse the same merge logic
+     * without running the full command.
+     */
     public static List<ReportEntry> collectFlaggedEntries(Model model, int quantityThreshold,
             int daysThreshold) {
         List<Supply> lowStock = model.getLowStockSupplies(quantityThreshold);
@@ -66,7 +70,9 @@ public class GenerateResupplyReportCommand extends Command {
         return Collections.unmodifiableList(entries);
     }
 
-    /** Builds the text report from flagged supplies. */
+    /**
+     * If nothing is flagged we return the "all clear" line; otherwise a bullet list string.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         List<ReportEntry> entries = collectFlaggedEntries(model, quantityThreshold, daysThreshold);
@@ -93,23 +99,25 @@ public class GenerateResupplyReportCommand extends Command {
         return List.of(Role.LOGISTICS_OFFICER);
     }
 
-    /** One flagged row for the report. */
+    /**
+     * One line in the report — keeps the {@link Supply} plus why it was flagged.
+     */
     public static class ReportEntry {
         private final Supply supply;
         private final String reason;
 
-        /** @param reason e.g. Low Stock, Expiring Soon, Both */
+        /**
+         * @param reason "Low Stock", "Expiring Soon", or "Both" when it hits both rules
+         */
         public ReportEntry(Supply supply, String reason) {
             this.supply = supply;
             this.reason = reason;
         }
 
-        /** Returns the flagged supply. */
         public Supply getSupply() {
             return supply;
         }
 
-        /** Returns the flag reason string. */
         public String getReason() {
             return reason;
         }

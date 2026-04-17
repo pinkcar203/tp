@@ -1,17 +1,15 @@
 package meditrack.logic.commands.personnel;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import meditrack.logic.commands.Command;
 import meditrack.logic.commands.CommandResult;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
-import meditrack.model.ModelManager;
 import meditrack.model.Personnel;
 import meditrack.model.Role;
 import meditrack.model.Status;
-import meditrack.model.Session;
-
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Updates the medical status of a specific personnel in the roster.
@@ -67,20 +65,24 @@ public class UpdateStatusCommand extends Command {
             throw new CommandException("Field Medics are only authorized to update status to CASUALTY.");
         }
 
-        ModelManager manager = (ModelManager) model;
-        Personnel person = manager.getFilteredPersonnelList(null).get(oneBasedIndex - 1);
+        List<Personnel> roster = model.getFilteredPersonnelList(null);
+        if (oneBasedIndex < 1 || oneBasedIndex > roster.size()) {
+            throw new CommandException("The personnel index provided is invalid.");
+        }
+
+        Personnel person = roster.get(oneBasedIndex - 1);
         String name = person.getName();
 
-        manager.setPersonnelStatus(oneBasedIndex, newStatus);
+        model.setPersonnelStatus(oneBasedIndex, newStatus);
 
         if (durationDays > 0 && (newStatus == Status.MC || newStatus == Status.LIGHT_DUTY)) {
-            LocalDate expiryDate = LocalDate.now(manager.getClock()).plusDays(durationDays);
+            LocalDate expiryDate = LocalDate.now(model.getClock()).plusDays(durationDays);
             person.setStatusExpiryDate(expiryDate);
             return new CommandResult(String.format(MESSAGE_SUCCESS_WITH_DURATION, name, newStatus, expiryDate));
-        } else {
-            person.setStatusExpiryDate(null);
-            return new CommandResult(String.format(MESSAGE_SUCCESS, name, newStatus));
         }
+
+        person.setStatusExpiryDate(null);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, name, newStatus));
     }
 
     /**

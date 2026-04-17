@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import meditrack.commons.core.Constants;
 import meditrack.model.DutySlot;
 import meditrack.model.Personnel;
 import meditrack.model.ReadOnlyMediTrack;
@@ -17,18 +18,14 @@ import meditrack.model.Status;
 import meditrack.model.Supply;
 
 /**
- * Utility class designed to export MediTrack data into a universally readable CSV format.
- * Strictly enforces Role-Based Access Control (RBAC) to protect medical and operational confidentiality.
+ * Writes role-filtered CSV snapshots under {@code exports/} — each role only sees rows they are meant to
+ * (same rules as in the app). Uses {@link Constants} for low-stock / expiring thresholds so we do not
+ * hard-code random cutoffs here.
  */
 public class CsvExportUtility {
 
     /**
-     * Exports the application data to a CSV file in the default "exports" directory.
-     * 
-     * @param data        The current read-only state of the application data.
-     * @param currentRole The role of the user requesting the export.
-     * @return The file path where the CSV was saved.
-     * @throws IOException If there is an error writing to the file system.
+     * Same as overload, but default folder {@code ./exports} under the working directory.
      */
     public static Path exportData(ReadOnlyMediTrack data, Role currentRole) throws IOException {
         Path defaultExportDir = Paths.get(System.getProperty("user.dir"), "exports");
@@ -36,13 +33,7 @@ public class CsvExportUtility {
     }
 
     /**
-     * Exports the application data to a specific directory.
-     *
-     * @param data        The current read-only state of the application data.
-     * @param currentRole The role of the user requesting the export.
-     * @param exportDir   The custom directory path to save the CSV into.
-     * @return The file path where the CSV was saved.
-     * @throws IOException If there is an error writing to the file system.
+     * @return path to the file we just wrote (filename includes role + timestamp)
      */
     public static Path exportData(ReadOnlyMediTrack data, Role currentRole, Path exportDir) throws IOException {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -91,11 +82,12 @@ public class CsvExportUtility {
                 writer.append("=== SUPPLY INVENTORY ===\n");
                 writer.append("Item Name,Quantity,Expiry Date,Action Required\n");
 
-                LocalDate thirtyDaysFromNow = LocalDate.now().plusDays(30);
+                LocalDate expiryCutoff = LocalDate.now().plusDays(Constants.EXPIRY_THRESHOLD_DAYS);
 
                 for (Supply s : data.getSupplyList()) {
                     String flag = "";
-                    if (s.getQuantity() < 20 || s.getExpiryDate().isBefore(thirtyDaysFromNow)) {
+                    if (s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY
+                            || s.getExpiryDate().isBefore(expiryCutoff)) {
                         flag = "⚠ LOW / EXPIRING";
                     }
                     writer.append(String.format("\"%s\",%d,\"%s\",\"%s\"\n",

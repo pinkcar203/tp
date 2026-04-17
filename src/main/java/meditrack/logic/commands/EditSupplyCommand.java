@@ -1,7 +1,8 @@
 package meditrack.logic.commands;
 
-import java.util.Objects;
 import java.util.List;
+import java.util.Objects;
+
 import meditrack.commons.core.Index;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
@@ -10,7 +11,7 @@ import meditrack.model.Supply;
 import meditrack.model.exceptions.InvalidIndexException;
 
 /**
- * Replaces the supply at the given index with the edited version.
+ * Overwrites an existing supply at a list index with new name/qty/expiry from the modal.
  */
 public class EditSupplyCommand extends Command {
 
@@ -21,15 +22,17 @@ public class EditSupplyCommand extends Command {
     private final Supply editedSupply;
 
     /**
-     * @param targetIndex 1-based index
-     * @param editedSupply replacement supply data
+     * @param targetIndex  row to change (Index type keeps 0-based vs 1-based straight)
+     * @param editedSupply   new field values to save
      */
     public EditSupplyCommand(Index targetIndex, Supply editedSupply) {
         this.targetIndex = Objects.requireNonNull(targetIndex);
         this.editedSupply = Objects.requireNonNull(editedSupply);
     }
 
-    /** Replaces the supply at the stored index. */
+    /**
+     * Updates the model; out-of-range index is turned into a normal {@link CommandException} message.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         try {
@@ -44,7 +47,7 @@ public class EditSupplyCommand extends Command {
                 editedSupply.getExpiryDate()));
     }
 
-    /** Field medic only. */
+    /** Field medic or logistics officer. */
     @Override
     public List<Role> getRequiredRoles() {
         return List.of(Role.FIELD_MEDIC, Role.LOGISTICS_OFFICER);

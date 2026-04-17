@@ -1,7 +1,8 @@
 package meditrack.logic.commands;
 
-import java.util.Objects;
 import java.util.List;
+import java.util.Objects;
+
 import meditrack.commons.core.Index;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
@@ -10,8 +11,8 @@ import meditrack.model.Supply;
 import meditrack.model.exceptions.InvalidIndexException;
 
 /**
- * Deletes a supply from the inventory by its displayed index.
- * Only the Field Medic role can run this command.
+ * Removes a supply row by its index in the table (same numbering as the UI).
+ * Field medic and logistics officer roles.
  */
 public class DeleteSupplyCommand extends Command {
 
@@ -20,11 +21,16 @@ public class DeleteSupplyCommand extends Command {
 
     private final Index targetIndex;
 
-    /** @param targetIndex index of the row to delete */
+    /**
+     * @param targetIndex which row to delete (wrapped 0/1-based logic lives in {@link Index}).
+     */
     public DeleteSupplyCommand(Index targetIndex) {
         this.targetIndex = Objects.requireNonNull(targetIndex);
     }
 
+    /**
+     * Calls {@link Model#deleteSupply(Index)}; bad index becomes a user-facing {@link CommandException}.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         try {
@@ -35,7 +41,7 @@ public class DeleteSupplyCommand extends Command {
         }
     }
 
-    /** Field medic only. */
+    /** Field medic or logistics officer. */
     @Override
     public List<Role> getRequiredRoles() {
         return List.of(Role.FIELD_MEDIC, Role.LOGISTICS_OFFICER);

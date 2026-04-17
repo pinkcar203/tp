@@ -378,9 +378,9 @@ public class LowSupplyScreen extends VBox {
         if (criticalLabel != null) criticalLabel.setText("CRITICAL: " + critical);
     }
 
-    /** Checks if a supply is critically low (below 10). */
+    /** Checks if a supply is critically low. */
     private boolean isCritical(Supply s) {
-        return s.getQuantity() < 10;
+        return s.getQuantity() < Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY;
     }
 
     /** Generates the placeholder label shown when the table is empty. */

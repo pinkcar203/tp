@@ -1,6 +1,7 @@
 package meditrack.logic.commands;
 
 import java.util.List;
+
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
 import meditrack.model.Role;
@@ -12,7 +13,7 @@ import meditrack.model.Role;
 public abstract class Command {
 
     /**
-     * Runs the command against the model and returns a result message.
+     * Applies the command to the model (add, delete, reports, etc.) and returns what we show the user.
      */
     public abstract CommandResult execute(Model model) throws CommandException;
 

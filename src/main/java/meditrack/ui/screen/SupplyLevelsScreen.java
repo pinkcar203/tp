@@ -338,8 +338,8 @@ public class SupplyLevelsScreen extends VBox {
                     setStyle("-fx-text-fill: #ffb4ab; -fx-font-weight: bold; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
                 }
-                // Check if expiring within 30 days
-                else if (v.isBefore(today.plusDays(30))) {
+                // Check if expiring within the configured threshold
+                else if (v.isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS))) {
                     setText(v.toString().replace("-", ".") + " [!]");
                     setStyle("-fx-text-fill: #fbbc00; -fx-font-size: 10px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
@@ -506,8 +506,8 @@ public class SupplyLevelsScreen extends VBox {
     /** Refreshes summary labels using live data from the Model. */
     private void updateFooterStats() {
         int total = model.getFilteredSupplyList().size();
-        int critical = model.getLowStockSupplies(10).size();
-        int lowStock = model.getLowStockSupplies(50).size() - critical;
+        int critical = model.getLowStockSupplies(Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY).size();
+        int lowStock = model.getLowStockSupplies(Constants.LOW_STOCK_THRESHOLD_QUANTITY).size() - critical;
 
         if (totalLabel != null) totalLabel.setText("TOTAL ITEMS: " + total);
         if (lowStockLabel != null) lowStockLabel.setText("LOW STOCK: " + lowStock);
@@ -526,17 +526,22 @@ public class SupplyLevelsScreen extends VBox {
     private static int getSeverityPriority(Supply s) {
         LocalDate today = LocalDate.now();
         if (s.getExpiryDate().isBefore(today) || s.getQuantity() == 0) return 1;
-        if (s.getQuantity() < 10) return 2;
-        if (s.getQuantity() < 50) return 3;
-        if (s.getExpiryDate().isBefore(today.plusDays(30))) return 4;
+        if (s.getQuantity() < Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY) return 2;
+        if (s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY) return 3;
+        if (s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS))) return 4;
         return 5;
     }
 
     /** Categorizes supply health based on quantity and expiration. */
     private String state(Supply s) {
         LocalDate today = LocalDate.now();
-        if (s.getExpiryDate().isBefore(today) || s.getQuantity() < 10) return "ERROR";
-        if (s.getQuantity() < 50 || s.getExpiryDate().isBefore(today.plusDays(30))) return "WARNING";
+        if (s.getExpiryDate().isBefore(today) || s.getQuantity() < Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY) {
+            return "ERROR";
+        }
+        if (s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY
+                || s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS))) {
+            return "WARNING";
+        }
         return "NORMAL";
     }
 

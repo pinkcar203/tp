@@ -21,11 +21,11 @@ import meditrack.model.DutyType;
 public class RosterAutoGenerator {
 
     public static final int DAY_MINUTES = 1440;
-    private static final int MIN_BREAK_MINUTES = 480;       // 8 hours
-    private static final int DAYTIME_START_MINUTES = 480;   // 08:00
-    private static final int DAYTIME_END_MINUTES = 1200;    // 20:00
+    private static final int MIN_BREAK_MINUTES = 480;
+    private static final int DAYTIME_START_MINUTES = 480;
+    private static final int DAYTIME_END_MINUTES = 1200;
 
-    /** Standard slot duration in minutes mapped per duty type. */
+    /** Fallback length if UI did not override (minutes). */
     public static final Map<DutyType, Integer> DEFAULT_DURATIONS = Map.of(
             DutyType.GUARD_DUTY, 120,
             DutyType.SENTRY, 120,
@@ -33,21 +33,16 @@ public class RosterAutoGenerator {
             DutyType.MEDICAL_COVER, 240,
             DutyType.STANDBY, 240);
 
-    /** Duty types that require full 24-hour coverage. */
+    /** These types are tiled across the full day, not just 08:00–20:00. */
     private static final Set<DutyType> ROUND_CLOCK =
             EnumSet.of(DutyType.GUARD_DUTY, DutyType.PATROL);
 
     /**
-     * Encapsulates the results of a single auto-generation execution.
-     *
-     * @param slots            The successfully scheduled duty slots.
-     * @param uncoveredWindows Time windows that could not be filled due to constraints or lack of personnel.
+     * @param slots            what we managed to place
+     * @param uncoveredWindows human-readable gaps when nobody was free / constraints blocked
      */
     public record GenerateResult(List<DutySlot> slots, List<String> uncoveredWindows) {
-        /**
-         * Checks if the scheduling algorithm failed to cover all required windows.
-         * @return {@code true} if there are gaps in the roster.
-         */
+        /** Quick check for the UI warning banner. */
         public boolean hasGaps() {
             return !uncoveredWindows.isEmpty();
         }
@@ -141,7 +136,6 @@ public class RosterAutoGenerator {
         return best;
     }
 
-    /** Checks if a proposed time block overlaps with already committed intervals. */
     private static boolean hasNoOverlap(List<int[]> intervals, int newStart, int newEnd) {
         for (int[] iv : intervals) {
             if (newStart < iv[1] && newEnd > iv[0]) {
@@ -151,7 +145,7 @@ public class RosterAutoGenerator {
         return true;
     }
 
-    /** Ensures the personnel retains at least one continuous 8-hour gap within the 24-hour day. */
+    /** After adding [newStart,newEnd), there must still exist an 8h pocket somewhere in the 24h line. */
     private static boolean hasEightHourBreak(List<int[]> existing, int newStart, int newEnd) {
         List<int[]> all = new ArrayList<>(existing);
         all.add(new int[]{newStart, newEnd});
@@ -170,7 +164,6 @@ public class RosterAutoGenerator {
         return afterLast >= MIN_BREAK_MINUTES;
     }
 
-    /** Converts an integer representing minutes-from-midnight into a LocalTime object. */
     private static LocalTime minutesToTime(int minutes) {
         int clamped = minutes % DAY_MINUTES;
         return LocalTime.of(clamped / 60, clamped % 60);

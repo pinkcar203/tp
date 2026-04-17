@@ -14,7 +14,7 @@ import javafx.collections.ObservableList;
 public class MediTrack implements ReadOnlyMediTrack {
 
     private final ObservableList<Supply> supplies = FXCollections.observableArrayList();
-    final ObservableList<Personnel> personnel = FXCollections.observableArrayList();
+    private final ObservableList<Personnel> personnel = FXCollections.observableArrayList();
     private final List<DutySlot> dutySlots = new ArrayList<>();
 
     /**
@@ -118,13 +118,6 @@ public class MediTrack implements ReadOnlyMediTrack {
         supplies.add(s);
     }
 
-    // --- Duty Slots Management ---
-
-    /**
-     * Retrieves an unmodifiable view of the scheduled duty slots.
-     *
-     * @return An unmodifiable List of DutySlot.
-     */
     @Override
     public List<DutySlot> getDutySlots() {
         return Collections.unmodifiableList(dutySlots);

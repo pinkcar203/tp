@@ -293,8 +293,8 @@ public class ResupplyReportScreen extends VBox {
                     setStyle("-fx-text-fill: " + ERROR + "; -fx-font-weight: bold; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
                 }
-                // Check if expiring within 30 days
-                else if (v.isBefore(today.plusDays(30))) {
+                // Check if expiring within the configured threshold
+                else if (v.isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS))) {
                     setText(v.toString().replace("-", ".") + " [!]");
                     setStyle("-fx-text-fill: " + WARNING + "; -fx-font-size: 10px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
@@ -388,7 +388,7 @@ public class ResupplyReportScreen extends VBox {
         for (Supply s : model.getFilteredSupplyList()) {
             boolean isAlreadyExpired = s.getExpiryDate().isBefore(today);
             boolean isExpiringSoon = !isAlreadyExpired && s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS));
-            boolean isCritical = s.getQuantity() < 10;
+            boolean isCritical = s.getQuantity() < Constants.CRITICAL_STOCK_THRESHOLD_QUANTITY;
             boolean isLowStock = !isCritical && s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY;
 
             String reason = null;

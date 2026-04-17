@@ -1,24 +1,23 @@
 package meditrack.logic.parser.personnel;
 
-import meditrack.logic.commands.personnel.*;
-import meditrack.logic.parser.exceptions.*;
-
-import meditrack.model.ModelManager;
+import meditrack.logic.commands.personnel.AddPersonnelCommand;
+import meditrack.logic.commands.personnel.RemovePersonnelCommand;
+import meditrack.logic.commands.personnel.UpdateStatusCommand;
+import meditrack.logic.parser.exceptions.ParseException;
 import meditrack.model.Status;
 
 /**
- * Parses raw strings into personnel commands
+ * Tiny string parser for the few personnel commands that still use a text-style format (mainly dev / consistency with AB3-style parsers).
+ * This is not the main {@link meditrack.logic.parser.Parser} — that one validates modal field maps.
  */
 public class PersonnelParser {
 
     private static final String STATUS_VALID = "FIT, LIGHT_DUTY, MC, CASUALTY, PENDING";
 
     /**
-     * Expected format: add_personnel n/NAME s/STATUS
+     * {@code add_personnel n/NAME s/STATUS}
      *
-     * @param args text after the command word
-     * @return command ready to execute
-     * @throws ParseException if name is blank or status is invalid
+     * @param args everything after the command word
      */
     public static AddPersonnelCommand parseAddPersonnel(String args) throws ParseException {
         String name = extractPrefixValue(args, "n/");
@@ -33,11 +32,7 @@ public class PersonnelParser {
     }
 
     /**
-     * Expected format: remove_personnel INDEX
-     *
-     * @param args text after the command word
-     * @return command ready to execute
-     * @throws ParseException if the index is not a positive integer
+     * {@code remove_personnel INDEX}
      */
     public static RemovePersonnelCommand parseRemovePersonnel(String args) throws ParseException {
         int index = parsePositiveInt(args.trim(),
@@ -46,7 +41,7 @@ public class PersonnelParser {
     }
 
     /**
-     * Expected format: update_status INDEX s/STATUS
+     * {@code update_status INDEX s/STATUS}
      */
     public static UpdateStatusCommand parseUpdateStatus(String args) throws ParseException {
         String[] parts = args.trim().split("\\s+", 2);

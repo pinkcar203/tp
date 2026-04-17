@@ -6,7 +6,6 @@ import meditrack.logic.commands.Command;
 import meditrack.logic.commands.CommandResult;
 import meditrack.logic.commands.exceptions.CommandException;
 import meditrack.model.Model;
-import meditrack.model.ModelManager;
 import meditrack.model.Personnel;
 import meditrack.model.Role;
 
@@ -44,8 +43,7 @@ public class RemovePersonnelCommand extends Command {
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
-        ModelManager manager = (ModelManager) model;
-        Personnel removed = manager.deletePersonnel(oneBasedIndex);
+        Personnel removed = model.deletePersonnel(oneBasedIndex);
         return new CommandResult(String.format(MESSAGE_SUCCESS, removed.getName()));
     }
 
