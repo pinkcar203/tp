@@ -65,6 +65,18 @@ public class ResupplyReportScreen extends VBox {
         this.model = model;
         this.logic = logic;
         buildUi();
+
+        // Use an InvalidationListener. It guarantees a trigger on ANY backend list modification!
+        this.model.getFilteredSupplyList().addListener((javafx.beans.Observable obs) -> {
+            javafx.application.Platform.runLater(() -> populateReportTable());
+        });
+
+        // Force a data refresh every single time you click the sidebar to view this screen!
+        this.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                javafx.application.Platform.runLater(() -> populateReportTable());
+            }
+        });
     }
 
     /** Assembles the layout components for this screen. */
@@ -272,16 +284,25 @@ public class ResupplyReportScreen extends VBox {
             @Override protected void updateItem(LocalDate v, boolean empty) {
                 super.updateItem(v, empty);
                 if (empty || v == null) { setText(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
-                boolean expired = isExpired(getTableView().getItems().get(idx));
-                if (expired && v.isBefore(LocalDate.now())) {
+
+                LocalDate today = LocalDate.now();
+
+                // Check if actually expired
+                if (v.isBefore(today)) {
                     setText("EXPIRED");
                     setStyle("-fx-text-fill: " + ERROR + "; -fx-font-weight: bold; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-                } else {
+                }
+                // Check if expiring within 30 days
+                else if (v.isBefore(today.plusDays(30))) {
                     setText(v.toString().replace("-", ".") + " [!]");
                     setStyle("-fx-text-fill: " + WARNING + "; -fx-font-size: 10px;"
+                            + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
+                }
+                // Normal date
+                else {
+                    setText(v.toString().replace("-", "."));
+                    setStyle("-fx-text-fill: #c8c6c6; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
                 }
             }
@@ -355,24 +376,33 @@ public class ResupplyReportScreen extends VBox {
             return;
         }
 
+        // Trigger the visual table build
+        populateReportTable();
+    }
+
+    /** Populates the visual table natively without executing commands. */
+    private void populateReportTable() {
         List<ReportRow> rows = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
         for (Supply s : model.getFilteredSupplyList()) {
-            boolean isExpired = s.getExpiryDate().isBefore(today);
-            boolean isExpiring = !isExpired && s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS));
+            boolean isAlreadyExpired = s.getExpiryDate().isBefore(today);
+            boolean isExpiringSoon = !isAlreadyExpired && s.getExpiryDate().isBefore(today.plusDays(Constants.EXPIRY_THRESHOLD_DAYS));
             boolean isCritical = s.getQuantity() < 10;
             boolean isLowStock = !isCritical && s.getQuantity() < Constants.LOW_STOCK_THRESHOLD_QUANTITY;
 
             String reason = null;
-            if (isExpired && isCritical) reason = "EXPIRED & CRITICAL";
-            else if (isExpired && isLowStock) reason = "EXPIRED & LOW STOCK";
-            else if (isExpired) reason = "EXPIRED";
-            else if (isExpiring && isCritical) reason = "CRITICAL & EXPIRING";
-            else if (isExpiring && isLowStock) reason = "LOW STOCK & EXPIRING";
-            else if (isCritical) reason = "CRITICAL";
-            else if (isLowStock) reason = "LOW STOCK";
-            else if (isExpiring) reason = "EXPIRING SOON";
+            if (isCritical) {
+                reason = "CRITICAL";
+            } else if (isLowStock) {
+                reason = "LOW STOCK";
+            }
+
+            if (isAlreadyExpired) {
+                reason = (reason == null) ? "EXPIRED" : reason + " & EXPIRED";
+            } else if (isExpiringSoon) {
+                reason = (reason == null) ? "EXPIRING SOON" : reason + " & EXPIRING";
+            }
 
             if (reason != null) {
                 rows.add(new ReportRow(s.getName(), s.getQuantity(), s.getExpiryDate(), reason));
@@ -392,6 +422,8 @@ public class ResupplyReportScreen extends VBox {
         reportTable.setItems(FXCollections.observableArrayList(rows));
         setFeedback(rows.size() + " item" + (rows.size() == 1 ? "" : "s") + " flagged for resupply.", true);
         updateFlaggedCount(rows.size());
+
+        reportTable.refresh();
     }
 
     /** Visual feedback indicator for UI actions. */

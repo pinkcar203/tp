@@ -327,20 +327,25 @@ public class InventoryScreen extends VBox {
             @Override protected void updateItem(LocalDate v, boolean empty) {
                 super.updateItem(v, empty);
                 if (empty || v == null) { setText(null); setStyle(""); return; }
-                int idx = getIndex();
-                if (idx < 0 || idx >= getTableView().getItems().size()) { setText(null); return; }
-                String s = state(getTableView().getItems().get(idx));
-                if ("ERROR".equals(s) && v.isBefore(LocalDate.now())) {
+
+                LocalDate today = LocalDate.now(); // or model.getClock() if you use it
+
+                // Check if actually expired
+                if (v.isBefore(today)) {
                     setText("EXPIRED");
-                    setStyle("-fx-text-fill: " + ERROR + "; -fx-font-weight: bold; -fx-font-size: 11px;"
+                    setStyle("-fx-text-fill: #ffb4ab; -fx-font-weight: bold; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-                } else if ("WARNING".equals(s)) {
+                }
+                // Check if expiring within 30 days
+                else if (v.isBefore(today.plusDays(30))) {
                     setText(v.toString().replace("-", ".") + " [!]");
-                    setStyle("-fx-text-fill: " + WARNING + "; -fx-font-size: 10px;"
+                    setStyle("-fx-text-fill: #fbbc00; -fx-font-size: 10px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
-                } else {
+                }
+                // Normal date
+                else {
                     setText(v.toString().replace("-", "."));
-                    setStyle("-fx-text-fill: " + SECONDARY + "; -fx-font-size: 11px;"
+                    setStyle("-fx-text-fill: #c8c6c6; -fx-font-size: 11px;"
                             + " -fx-font-family: 'Consolas', monospace; -fx-background-color: transparent;");
                 }
             }
